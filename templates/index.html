@@ -1,75 +1,91 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Simulación de Buses en Tiempo Real</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-  <style>
-    #map { height: 100vh; }
-  </style>
+    <meta charset="UTF-8">
+    <title>Simulador de Autobuses</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+
+        .stop-label {
+            pointer-events: none;
+        }
+    </style>
 </head>
 <body>
-  <div id="map"></div>
+    <div id="map"></div>
 
-  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-  <script>
-    const map = L.map('map').setView([-27.3306, -55.8667], 14);
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+    <script>
+        const map = L.map('map').setView([-27.09, -56.02], 14);
 
-    let busMarkers = {};
-    let routePolylines = {};
+        // Capa base (OpenStreetMap)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19
+        }).addTo(map);
 
-    async function fetchBusData() {
-      try {
-        const response = await fetch('/api/buses');
-        const data = await response.json();
-        updateBuses(data.buses);
-        updateRoutes(data.routes);
-      } catch (error) {
-        console.error('Error al obtener datos de buses:', error);
-      }
-    }
+        let busMarkers = {};
+        let routeLines = [];
+        let stopMarkers = [];
 
-    function updateBuses(buses) {
-      buses.forEach(bus => {
-        const { id, lat, lon } = bus;
+        async function updateMap() {
+            // Borrar rutas anteriores
+            routeLines.forEach(line => map.removeLayer(line));
+            routeLines = [];
 
-        if (!busMarkers[id]) {
-       
-          busMarkers[id] = L.marker([lat, lon], {
-            icon: L.icon({
-              iconUrl: 'https://cdn-icons-png.flaticon.com/512/61/61231.png', 
-              iconSize: [32, 32],
-              iconAnchor: [16, 16]
-            })
-          }).addTo(map);
-        } else {
-          // Mover marcador existente
-          busMarkers[id].setLatLng([lat, lon]);
+            // Borrar paradas anteriores
+            stopMarkers.forEach(marker => map.removeLayer(marker));
+            stopMarkers = [];
+
+            const routeRes = await fetch('/api/routes');
+            const busRes = await fetch('/api/buses');
+            const routes = await routeRes.json();
+            const buses = await busRes.json();
+
+            // Dibujar rutas y paradas
+            routes.forEach(route => {
+                const coords = route.stops.map(stop => stop.position);
+                const polyline = L.polyline(coords, { color: route.color }).addTo(map);
+                routeLines.push(polyline);
+
+                // Dibujar paradas con nombre
+                route.stops.forEach(stop => {
+                    const marker = L.marker(stop.position, {
+                        icon: L.divIcon({
+                            className: 'stop-label',
+                            html: `<div style="background:#fff;border:1px solid #333;padding:2px 4px;border-radius:4px;font-size:10px;">${stop.name}</div>`,
+                            iconSize: [60, 20],
+                            iconAnchor: [30, 10]
+                        })
+                    }).addTo(map);
+                    stopMarkers.push(marker);
+                });
+            });
+
+            // Mostrar buses
+            buses.forEach(bus => {
+                const { id, plate, route_name, passengers, status, position } = bus;
+                const popup = `<strong>Bus ${id}</strong><br>Placa: ${plate}<br>Ruta: ${route_name}<br>Pasajeros: ${passengers}<br>Estado: ${status}`;
+
+                if (busMarkers[id]) {
+                    busMarkers[id].setLatLng(position).setPopupContent(popup);
+                } else {
+                    const marker = L.marker(position).addTo(map).bindPopup(popup);
+                    busMarkers[id] = marker;
+                }
+            });
         }
-      });
-    }
 
-    function updateRoutes(routes) {
-      routes.forEach(routeData => {
-        const { id, route_id, color, route } = routeData;
-
-        if (!routePolylines[route_id]) {
-          const latlngs = route.map(p => [p.lat, p.lon]);
-          const polyline = L.polyline(latlngs, { color: color, weight: 4 }).addTo(map);
-          routePolylines[route_id] = polyline;
-        }
-      });
-    }
-
-    // Actualizar cada 2 segundos
-    setInterval(fetchBusData, 2000);
-
-    // Primera carga
-    fetchBusData();
-  </script>
+        updateMap();
+        setInterval(updateMap, 3000); // Actualizar cada 3 segundos
+    </script>
 </body>
 </html>
