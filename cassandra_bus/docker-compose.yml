@@ -19,7 +19,7 @@ services:
       KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true" 
       KAFKA_CFG_NUM_PARTITIONS: "3" 
     healthcheck:
-      test: ["CMD","kafka-broker-api-versions.sh","--bootstrap-server","kafka:9092"]
+      test: ["CMD", "kafka-broker-api-versions.sh", "--bootstrap-server", "kafka:9092"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -27,19 +27,25 @@ services:
     networks:
       - backend
 
-  cassandra:
+  cassandra1:
     image: bitnami/cassandra:latest
+    container_name: cassandra1
     ports:
       - "9042:9042"
+      - "7000:7000"
     volumes:
       - ./init-scripts/cassandra:/docker-entrypoint-initdb.d:ro
     environment:
       CASSANDRA_CLUSTER_NAME: "bus_cluster"
-      CASSANDRA_START_RPC: "true"
+      CASSANDRA_SEEDS: "192.168.1.101"
+      CASSANDRA_LISTEN_ADDRESS: "192.168.1.101"
+      CASSANDRA_BROADCAST_ADDRESS: "192.168.1.101"
+      CASSANDRA_ENDPOINT_SNITCH: "GossipingPropertyFileSnitch"
+      CASSANDRA_DC: "datacenter1"
+      CASSANDRA_PASSWORD_SEEDER: "yes"
     networks:
       - backend
 
-  #3 replicas
   ingestor:
     build:
       context: ./ingestor
@@ -47,13 +53,13 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
-      cassandra:
+      cassandra1:
         condition: service_started
     env_file:
       - .env
     environment:
       KAFKA_BROKER: "kafka:9092"
-      CASSANDRA_HOST: "cassandra"
+      CASSANDRA_HOST: "cassandra1"
       CASSANDRA_DC: "datacenter1"
       KAFKA_TOPIC: "bus-locations"
     deploy:
