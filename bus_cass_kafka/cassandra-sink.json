@@ -1,0 +1,47 @@
+{
+  "name": "cassandra-sink-choferes",
+  "config": {
+    "connector.class": "io.confluent.connect.cassandra.CassandraSinkConnector",
+    "tasks.max": "1",
+    "topics": "choferes",
+
+
+    "key.converter":   "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable":   "false",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false",
+
+   
+    "transforms":                              "extractKey,ConvertTimestamp",
+    "transforms.extractKey.type":              "org.apache.kafka.connect.transforms.ValueToKey",
+    "transforms.extractKey.fields":            "driver_id",
+
+  
+    "transforms.ConvertTimestamp.type":        "org.apache.kafka.connect.transforms.TimestampConverter$Value",
+    "transforms.ConvertTimestamp.field":       "fecha_ingreso",
+    "transforms.ConvertTimestamp.target.type":"Timestamp",
+    "transforms.ConvertTimestamp.format":      "epoch_ms",
+
+   
+    "cassandra.contact.points":    "cassandra",
+    "cassandra.port":              "9042",
+    "cassandra.keyspace":          "transit",
+    "cassandra.local.datacenter":  "datacenter1",
+    "cassandra.security":          "NONE",
+
+    "cassandra.offset.storage.keyspace": "transit",
+    "cassandra.offset.storage.table":    "connect_offsets",
+    "cassandra.offset.flush.timeout.ms":"60000",
+
+    "confluent.topic.bootstrap.servers": "kafka:9092",
+    "confluent.topic.replication.factor":"1",
+
+    "cassandra.insert.mode":       "INSERT",
+    "cassandra.consistency.level": "LOCAL_QUORUM",
+    "cassandra.auto.create":       "false",
+    "cassandra.auto.evolve":       "false",
+
+    "cassandra.topic.choferes.insert":
+      "INSERT INTO choferes (driver_id, nombre, licencia, telefono, fecha_ingreso) VALUES (?, ?, ?, ?, ?);"
+  }
+}

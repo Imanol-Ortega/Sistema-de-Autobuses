@@ -1,0 +1,203 @@
+services:
+  cassandra:
+    image: cassandra:4.0
+    container_name: cassandra
+    restart: unless-stopped
+    ports:
+      - "9042:9042"
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+      - ./init-scripts/cassandra:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'describe keyspaces'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  init:
+    image: cassandra:4.0
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    entrypoint: >
+      bash -c "
+        echo 'Aplicando esquema CQL...';
+        cqlsh cassandra 9042 -f /docker-entrypoint-initdb.d/init.cql
+      "
+    volumes:
+      - ./init-scripts/cassandra:/docker-entrypoint-initdb.d
+    restart: "no"
+
+  cassandra-seed:
+    image: python:3.10-slim
+    container_name: cassandra-seed
+    depends_on:
+      cassandra:
+        condition: service_healthy
+      init:
+        condition: service_started
+    volumes:
+      - ./init-scripts/cassandra:/app
+    working_dir: /app
+    entrypoint: >
+      bash -c "
+        pip install cassandra-driver Faker &&
+        python seed_data.py
+      "
+    restart: "no"
+
+  kafka1:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: kafka
+    restart: unless-stopped
+    depends_on:
+      - cassandra
+      - cassandra-seed
+    environment:
+      - KAFKA_NODE_ID=1
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka:9093,2@kafka2:9093,3@kafka3:9093
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_LISTENERS=CONTROLLER://0.0.0.0:9093,INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:29092
+      - KAFKA_ADVERTISED_LISTENERS=INTERNAL://kafka:9092,EXTERNAL://localhost:29092
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
+      - KAFKA_LOG4J_LOGGERS="kafka=WARN,kafka.controller=WARN,kafka.log.LogCleaner=WARN,state.change.logger=WARN,kafka.producer.async.DefaultEventHandler=WARN,org.apache.kafka.image.loader.MetadataLoader=WARN"
+      - CLUSTER_ID=zKIgByxySeivP1Vplqt0Jg
+      - KRAFT_CONTAINER_HOST_NAME=kafka
+    ports:
+      - "29092:29092"
+    volumes:
+      - kafka1_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server kafka:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  kafka2:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: kafka2
+    restart: unless-stopped
+    depends_on:
+      - cassandra
+      - cassandra-seed
+    environment:
+      - KAFKA_NODE_ID=2
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka:9093,2@kafka2:9093,3@kafka3:9093
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_LISTENERS=CONTROLLER://0.0.0.0:9093,INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:29093
+      - KAFKA_ADVERTISED_LISTENERS=INTERNAL://kafka2:9092,EXTERNAL://localhost:29093
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
+      - KAFKA_LOG4J_LOGGERS="kafka=WARN,kafka.controller=WARN,kafka.log.LogCleaner=WARN,state.change.logger=WARN,kafka.producer.async.DefaultEventHandler=WARN,org.apache.kafka.image.loader.MetadataLoader=WARN"
+      - CLUSTER_ID=zKIgByxySeivP1Vplqt0Jg
+      - KRAFT_CONTAINER_HOST_NAME=kafka2
+    ports:
+      - "29093:29093"
+    volumes:
+      - kafka2_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server kafka2:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  kafka3:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: kafka3
+    restart: unless-stopped
+    depends_on:
+      - cassandra
+      - cassandra-seed
+    environment:
+      - KAFKA_NODE_ID=3
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka:9093,2@kafka2:9093,3@kafka3:9093
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_LISTENERS=CONTROLLER://0.0.0.0:9093,INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:29094
+      - KAFKA_ADVERTISED_LISTENERS=INTERNAL://kafka3:9092,EXTERNAL://localhost:29094
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
+      - KAFKA_LOG4J_LOGGERS="kafka=WARN,kafka.controller=WARN,kafka.log.LogCleaner=WARN,state.change.logger=WARN,kafka.producer.async.DefaultEventHandler=WARN,org.apache.kafka.image.loader.MetadataLoader=WARN"
+      - CLUSTER_ID=zKIgByxySeivP1Vplqt0Jg
+      - KRAFT_CONTAINER_HOST_NAME=kafka3
+    ports:
+      - "29094:29094"
+    volumes:
+      - kafka3_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server kafka3:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  topic-creator:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: topic-creator
+    depends_on:
+      - kafka1
+      - kafka2
+      - kafka3
+    entrypoint: >
+      sh -c "
+        echo 'Creando topics… (☞ﾟヮﾟ)☞';
+        for topic in choferes usuarios paradas buses historial_pagos historial_recorrido_real viajes; do
+          kafka-topics --bootstrap-server kafka:9092 --create --topic $topic --partitions 3 --replication-factor 3 || echo 'El topic $topic ya existe o falló (┬┬﹏┬┬)';
+        done;
+        echo 'Topics creados';
+      "
+    restart: "no"
+
+  ingestor1:
+    build:
+      context: ./connectors
+      dockerfile: Dockerfile
+    container_name: ingestor1
+    depends_on:
+      - kafka1
+      - cassandra
+      - topic-creator
+    env_file:
+      - .env
+    environment:
+      - KAFKA_BROKERS=kafka1:9092,kafka2:9092,kafka3:9092
+      - CASSANDRA_CONTACT_POINTS=cassandra
+      - CASSANDRA_LOCAL_DC=datacenter1
+      - CASSANDRA_USERNAME=cassandra
+      - CASSANDRA_PASSWORD=cassandra
+      - CASSANDRA_KEYSPACE=transit
+      - TOPICS=choferes,usuarios,paradas,buses,historial_pagos,historial_recorrido_real,viajes
+    working_dir: /app
+    entrypoint: ["sh", "-c", "echo 'Arrancando ingestor1…'; exec node black_magic.js"]
+    restart: unless-stopped
+
+  ingestor2:
+    build:
+      context: ./connectors
+      dockerfile: Dockerfile
+    container_name: ingestor2
+    depends_on:
+      - kafka1
+      - cassandra
+      - topic-creator
+    env_file:
+      - .env
+    environment:
+      - KAFKA_BROKERS=kafka1:9092,kafka2:9092,kafka3:9092
+      - CASSANDRA_CONTACT_POINTS=cassandra
+      - CASSANDRA_LOCAL_DC=datacenter1
+      - CASSANDRA_USERNAME=cassandra
+      - CASSANDRA_PASSWORD=cassandra
+      - CASSANDRA_KEYSPACE=transit
+      - TOPICS=choferes,usuarios,paradas,buses,historial_pagos,historial_recorrido_real,viajes
+    working_dir: /app
+    entrypoint: ["sh", "-c", "echo 'Arrancando ingestor2…'; exec node black_magic.js"]
+    restart: unless-stopped
+
+volumes:
+  cassandra_data: {}
+  kafka1_data: {}
+  kafka2_data: {}
+  kafka3_data: {}
