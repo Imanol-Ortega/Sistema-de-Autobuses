@@ -8,16 +8,46 @@ services:
     volumes:
       - cassandra_data:/var/lib/cassandra
       - ./init-scripts/cassandra:/docker-entrypoint-initdb.d
+    environment:
+      - CASSANDRA_CLUSTER_NAME=transit-cluster
+      - CASSANDRA_SEEDS=cassandra
+      - CASSANDRA_LISTEN_ADDRESS=auto
+      - CASSANDRA_BROADCAST_ADDRESS=cassandra
+      - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
     healthcheck:
       test: ["CMD-SHELL", "cqlsh -e 'describe keyspaces'"]
       interval: 10s
       timeout: 5s
       retries: 10
 
+  cassandra2:
+    image: cassandra:4.0
+    container_name: cassandra2
+    restart: unless-stopped
+    ports:
+      - "9043:9042"
+    volumes:
+      - cassandra2_data:/var/lib/cassandra
+    environment:
+      - CASSANDRA_CLUSTER_NAME=transit-cluster
+      - CASSANDRA_SEEDS=cassandra
+      - CASSANDRA_LISTEN_ADDRESS=auto
+      - CASSANDRA_BROADCAST_ADDRESS=cassandra2
+      - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
+    depends_on:
+      - cassandra
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'describe keyspaces'"]
+      interval: 20s
+      timeout: 30s
+      retries: 20
+
   init:
     image: cassandra:4.0
     depends_on:
       cassandra:
+        condition: service_healthy
+      cassandra2:
         condition: service_healthy
     entrypoint: >
       bash -c "
@@ -33,6 +63,8 @@ services:
     container_name: cassandra-seed
     depends_on:
       cassandra:
+        condition: service_healthy
+      cassandra2:
         condition: service_healthy
       init:
         condition: service_started
@@ -51,8 +83,12 @@ services:
     container_name: kafka
     restart: unless-stopped
     depends_on:
-      - cassandra
-      - cassandra-seed
+      cassandra:
+        condition: service_healthy
+      cassandra2:
+        condition: service_healthy
+      cassandra-seed:
+        condition: service_started
     environment:
       - KAFKA_NODE_ID=1
       - KAFKA_PROCESS_ROLES=broker,controller
@@ -80,8 +116,12 @@ services:
     container_name: kafka2
     restart: unless-stopped
     depends_on:
-      - cassandra
-      - cassandra-seed
+      cassandra:
+        condition: service_healthy
+      cassandra2:
+        condition: service_healthy
+      cassandra-seed:
+        condition: service_started
     environment:
       - KAFKA_NODE_ID=2
       - KAFKA_PROCESS_ROLES=broker,controller
@@ -109,8 +149,12 @@ services:
     container_name: kafka3
     restart: unless-stopped
     depends_on:
-      - cassandra
-      - cassandra-seed
+      cassandra:
+        condition: service_healthy
+      cassandra2:
+        condition: service_healthy
+      cassandra-seed:
+        condition: service_started
     environment:
       - KAFKA_NODE_ID=3
       - KAFKA_PROCESS_ROLES=broker,controller
@@ -164,7 +208,7 @@ services:
     environment:
       - KAFKA_BROKERS=kafka1:9092,kafka2:9092,kafka3:9092
       - CASSANDRA_CONTACT_POINTS=cassandra
-      - CASSANDRA_LOCAL_DC=datacenter1
+      - CASSANDRA_LOCAL_DC=dc1
       - CASSANDRA_USERNAME=cassandra
       - CASSANDRA_PASSWORD=cassandra
       - CASSANDRA_KEYSPACE=transit
@@ -187,7 +231,7 @@ services:
     environment:
       - KAFKA_BROKERS=kafka1:9092,kafka2:9092,kafka3:9092
       - CASSANDRA_CONTACT_POINTS=cassandra
-      - CASSANDRA_LOCAL_DC=datacenter1
+      - CASSANDRA_LOCAL_DC=dc1
       - CASSANDRA_USERNAME=cassandra
       - CASSANDRA_PASSWORD=cassandra
       - CASSANDRA_KEYSPACE=transit
@@ -198,6 +242,7 @@ services:
 
 volumes:
   cassandra_data: {}
+  cassandra2_data: {}
   kafka1_data: {}
   kafka2_data: {}
   kafka3_data: {}

@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { Kafka } = require('kafkajs');
 const cassandra = require('cassandra-driver');
+const Uuid = cassandra.types.Uuid;
 
 const kafka = new Kafka({
   brokers: process.env.KAFKA_BROKERS.split(','),
@@ -31,6 +32,26 @@ async function safeExecute(query, params = []) {
     }
   }
   throw new Error('Failed to execute query after retries');
+}
+
+async function eachMessage({ topic, partition, message }) {
+  try {
+    const value = JSON.parse(message.value.toString());
+    const driverId = value.driver_id;
+
+    // Validar el formato del UUID
+    if (!Uuid.isValid(driverId)) {
+      throw new Error(`Invalid UUID format: ${driverId}`);
+    }
+
+    const uuid = Uuid.fromString(driverId);
+
+    // Procesar el mensaje (ejemplo)
+    console.log(`Procesando mensaje para driver_id: ${uuid}`);
+    // ... lógica para insertar en Cassandra ...
+  } catch (error) {
+    console.error(`[Error] Procesando mensaje en topic ${topic}:`, error.message);
+  }
 }
 
 async function run() {
@@ -199,3 +220,5 @@ run().catch(err => {
   console.error('Fatal error:', err);
   process.exit(1);
 });
+
+module.exports = { eachMessage };

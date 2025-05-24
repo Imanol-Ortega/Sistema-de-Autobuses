@@ -1,6 +1,9 @@
 -- 1. Keyspace
 CREATE KEYSPACE IF NOT EXISTS transit
-  WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '1'}
+  WITH replication = {
+    'class': 'NetworkTopologyStrategy',
+    'dc1': 2
+  }
   AND durable_writes = true;
 
 -- 2. Tabla de choferes
