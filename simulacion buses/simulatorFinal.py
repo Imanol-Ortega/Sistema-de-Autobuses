@@ -2,6 +2,9 @@ import random
 from geopy.distance import geodesic
 from faker import Faker
 from datetime import datetime, timedelta
+from cassandra.cluster import Cluster
+from cassandra.auth import PlainTextAuthProvider
+import uuid
 
 class BusSimulator:
     def __init__(self, num_buses=6):
