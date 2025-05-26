@@ -20,7 +20,8 @@ class BusSimulator:
         self.current_traffic = {}
         self.DEFAULT_ZONE = "DEFAULT_ZONE"
         self.DEFAULT_TRAFFIC = "moderate"
-
+        self.cluster = Cluster(['127.0.0.1'])  # Cambiar por tu IP de Cassandra
+        self.session = self.cluster.connect('transit')
         self._initialize_system()
 
     def _initialize_system(self):
@@ -104,20 +105,50 @@ class BusSimulator:
         return colors[(route_id - 1) % len(colors)]
 
     def _generate_buses(self):
+        insert_query = """
+            INSERT INTO buses (
+                bus_id, plate, route_id, 
+                route_name, route_color, 
+                capacity, status, driver_id
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        
         for bus_id in range(1, self.num_buses + 1):
             route = self.routes[(bus_id - 1) % len(self.routes)]
             start = route["stops"][0]
-            bus = {
-                "id": bus_id,
+            
+            # Generar datos para Cassandra
+            bus_data = {
+                "id": f"BUS-{bus_id:03d}",  # ID en formato texto
                 "plate": self.fake.license_plate(),
-                "route_id": route["id"],
+                "route_id": str(route["id"]),
                 "route_name": route["name"],
                 "route_color": route["color"],
+                "capacity": random.choice([30, 40, 50]),
+                "status": "in_operation",
+                "driver_id": uuid.uuid4()
+            }
+            
+            # Insertar en Cassandra
+            self.session.execute(insert_query, (
+                bus_data["id"],
+                bus_data["plate"],
+                bus_data["route_id"],
+                bus_data["route_name"],
+                bus_data["route_color"],
+                bus_data["capacity"],
+                bus_data["status"],
+                bus_data["driver_id"]
+            ))
+            
+            # Configurar datos de simulación
+            bus = {
+                **bus_data,
                 "current_position": [start[0], start[1]],
                 "speed": random.uniform(50, 60),
-                "capacity": random.choice([30, 40, 50]),
                 "passengers": random.randint(5, 45),
-                "status": "in_operation"
+                "next_stop": None,
+                "next_stop_name": None
             }
             self._set_next_stop(bus)
             self.buses.append(bus)
@@ -217,3 +248,7 @@ class BusSimulator:
             "color": r["color"],
             "stops": [{"position": [s[0], s[1]], "name": s[2]} for s in r["stops"]]
         } for r in self.routes]
+
+    def __del__(self):
+        """Cierra la conexión con Cassandra"""
+        self.cluster.shutdown()
