@@ -9,7 +9,6 @@ Esta aplicación móvil, desarrollada con **React Native** y **Expo**, permite v
 - Mapa interactivo con OpenStreetMap.
 - Visualización de colectivos en tiempo real con marcadores.
 - Conexión WebSocket para recibir actualizaciones en vivo.
-- Datos actualizados sin necesidad de refrescar la app.
 
 ---
 
