@@ -1,6 +1,7 @@
 import { Application } from "express";
 import express from 'express';
 import { router } from "./routes";
+import { cassandraClient, connectCassandra } from "./config/db/cassandra";
 
 export class Server {
   readonly app: Application;
@@ -11,6 +12,7 @@ export class Server {
     this.port = 3000;
     this.app.use(express.json());
     this.initRoutes();
+    this.initCassandra();
   }
 
   async init(onStart: () => void) {
@@ -19,5 +21,9 @@ export class Server {
 
   async initRoutes() {
     this.app.use("/api", router);
+  }
+
+  async initCassandra() {
+    connectCassandra()
   }
 }
