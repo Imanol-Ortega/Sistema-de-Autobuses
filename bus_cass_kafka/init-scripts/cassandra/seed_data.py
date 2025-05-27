@@ -68,9 +68,10 @@ def insert_seed_data(session):
     for _ in range(10):
         uid = uuid.uuid4()
         session.execute("""
-            INSERT INTO usuarios (user_id, nombre, email, telefono, fecha_reg)
-            VALUES (%s, %s, %s, %s, toTimestamp(now()))
-        """, (uid, fake.name(), fake.email(), fake.phone_number()))
+            INSERT INTO usuarios (user_id, nombre, password, email, telefono, fecha_reg, saldo)
+            VALUES (%s, %s, %s, %s, %s, toTimestamp(now()), %s)
+        """, (uid, fake.name(), fake.password(), fake.email(), fake.phone_number(), "0"))
+
 
     print("Seed data insertado exitosamente (❁´◡`❁)(❁´◡`❁).")
 

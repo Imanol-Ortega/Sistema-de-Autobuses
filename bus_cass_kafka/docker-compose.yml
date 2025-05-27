@@ -16,9 +16,9 @@ services:
       - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
     healthcheck:
       test: ["CMD-SHELL", "cqlsh -e 'describe keyspaces'"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
+      interval: 60s
+      timeout: 50s
+      retries: 20
 
   cassandra2:
     image: cassandra:4.0
@@ -38,8 +38,8 @@ services:
       - cassandra
     healthcheck:
       test: ["CMD-SHELL", "cqlsh -e 'describe keyspaces'"]
-      interval: 20s
-      timeout: 30s
+      interval: 80s
+      timeout: 50s
       retries: 20
 
   init:
@@ -73,6 +73,8 @@ services:
     working_dir: /app
     entrypoint: >
       bash -c "
+        echo 'Esperando 15s para asegurar que init haya terminado...';
+        sleep 15;
         pip install cassandra-driver Faker &&
         python seed_data.py
       "
@@ -98,18 +100,31 @@ services:
       - KAFKA_ADVERTISED_LISTENERS=INTERNAL://kafka:9092,EXTERNAL://localhost:29092
       - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
       - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
-      - KAFKA_LOG4J_LOGGERS="kafka=WARN,kafka.controller=WARN,kafka.log.LogCleaner=WARN,state.change.logger=WARN,kafka.producer.async.DefaultEventHandler=WARN,org.apache.kafka.image.loader.MetadataLoader=WARN"
       - CLUSTER_ID=zKIgByxySeivP1Vplqt0Jg
       - KRAFT_CONTAINER_HOST_NAME=kafka
+      - KAFKA_LOG4J_ROOT_LOGLEVEL=WARN
+      - KAFKA_LOG4J_LOGGERS=kafka=WARN,kafka.controller=WARN,kafka.log.LogCleaner=WARN,state.change.logger=WARN,kafka.producer.async.DefaultEventHandler=WARN
+      - KAFKA_LOG4J_TOOLS_LOGLEVEL=ERROR
     ports:
       - "29092:29092"
     volumes:
       - kafka1_data:/var/lib/kafka/data
+      # Monta el archivo en la ruta del template para que sea usado por el proceso de sustitución
+    #  - ./log4j.properties:/etc/confluent/docker/log4j.properties.template:ro
+    # Agrega un tmpfs en /etc/kafka para que el target pueda ser escrito
+   # tmpfs:
+  #    - /etc/kafka
     healthcheck:
       test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server kafka:9092"]
-      interval: 10s
-      timeout: 5s
+      interval: 30s
+      timeout: 20s
       retries: 10
+    entrypoint: >
+      sh -c "
+        echo 'Esperando 60s para asegurar que Cassandra y Seed estén completamente listos...';
+        sleep 60;
+        exec /etc/confluent/docker/run
+      "
 
   kafka2:
     image: confluentinc/cp-kafka:7.4.0
@@ -131,18 +146,31 @@ services:
       - KAFKA_ADVERTISED_LISTENERS=INTERNAL://kafka2:9092,EXTERNAL://localhost:29093
       - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
       - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
-      - KAFKA_LOG4J_LOGGERS="kafka=WARN,kafka.controller=WARN,kafka.log.LogCleaner=WARN,state.change.logger=WARN,kafka.producer.async.DefaultEventHandler=WARN,org.apache.kafka.image.loader.MetadataLoader=WARN"
       - CLUSTER_ID=zKIgByxySeivP1Vplqt0Jg
       - KRAFT_CONTAINER_HOST_NAME=kafka2
+      - KAFKA_LOG4J_ROOT_LOGLEVEL=WARN
+      - KAFKA_LOG4J_LOGGERS=kafka=WARN,kafka.controller=WARN,kafka.log.LogCleaner=WARN,state.change.logger=WARN,kafka.producer.async.DefaultEventHandler=WARN
+      - KAFKA_LOG4J_TOOLS_LOGLEVEL=ERROR
     ports:
       - "29093:29093"
     volumes:
       - kafka2_data:/var/lib/kafka/data
+      # Monta el archivo en la ruta del template para que sea usado por el proceso de sustitución
+    #  - ./log4j.properties:/etc/confluent/docker/log4j.properties.template:ro
+    # Agrega un tmpfs en /etc/kafka para que el target pueda ser escrito
+   # tmpfs:
+    #  - /etc/kafka
     healthcheck:
       test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server kafka2:9092"]
-      interval: 10s
-      timeout: 5s
+      interval: 30s
+      timeout: 20s
       retries: 10
+    entrypoint: >
+      sh -c "
+        echo 'Esperando 60s para asegurar que Cassandra y Seed estén completamente listos...';
+        sleep 60;
+        exec /etc/confluent/docker/run
+      "
 
   kafka3:
     image: confluentinc/cp-kafka:7.4.0
@@ -164,18 +192,31 @@ services:
       - KAFKA_ADVERTISED_LISTENERS=INTERNAL://kafka3:9092,EXTERNAL://localhost:29094
       - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
       - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
-      - KAFKA_LOG4J_LOGGERS="kafka=WARN,kafka.controller=WARN,kafka.log.LogCleaner=WARN,state.change.logger=WARN,kafka.producer.async.DefaultEventHandler=WARN,org.apache.kafka.image.loader.MetadataLoader=WARN"
       - CLUSTER_ID=zKIgByxySeivP1Vplqt0Jg
       - KRAFT_CONTAINER_HOST_NAME=kafka3
+      - KAFKA_LOG4J_ROOT_LOGLEVEL=WARN
+      - KAFKA_LOG4J_LOGGERS=kafka=WARN,kafka.controller=WARN,kafka.log.LogCleaner=WARN,state.change.logger=WARN,kafka.producer.async.DefaultEventHandler=WARN
+      - KAFKA_LOG4J_TOOLS_LOGLEVEL=ERROR
     ports:
       - "29094:29094"
     volumes:
       - kafka3_data:/var/lib/kafka/data
+      # Monta el archivo en la ruta del template para que sea usado por el proceso de sustitución
+      #- ./log4j.properties:/etc/confluent/docker/log4j.properties.template:ro
+    # Agrega un tmpfs en /etc/kafka para que el target pueda ser escrito
+   # tmpfs:
+    #  - /etc/kafka
     healthcheck:
       test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server kafka3:9092"]
-      interval: 10s
-      timeout: 5s
+      interval: 30s
+      timeout: 20s
       retries: 10
+    entrypoint: >
+      sh -c "
+        echo 'Esperando 60s para asegurar que Cassandra y Seed estén completamente listos...';
+        sleep 60;
+        exec /etc/confluent/docker/run
+      "
 
   topic-creator:
     image: confluentinc/cp-kafka:7.4.0
@@ -186,8 +227,10 @@ services:
       - kafka3
     entrypoint: >
       sh -c "
+        echo 'Esperando 150s después de Kafka para crear los topics...';
+        sleep 150;
         echo 'Creando topics… (☞ﾟヮﾟ)☞';
-        for topic in choferes usuarios paradas buses historial_pagos historial_recorrido_real viajes; do
+        for topic in choferes usuarios paradas buses historial_pagos horarios viajes; do
           kafka-topics --bootstrap-server kafka:9092 --create --topic $topic --partitions 3 --replication-factor 3 || echo 'El topic $topic ya existe o falló (┬┬﹏┬┬)';
         done;
         echo 'Topics creados';
@@ -212,9 +255,9 @@ services:
       - CASSANDRA_USERNAME=cassandra
       - CASSANDRA_PASSWORD=cassandra
       - CASSANDRA_KEYSPACE=transit
-      - TOPICS=choferes,usuarios,paradas,buses,historial_pagos,historial_recorrido_real,viajes
+      - TOPICS=choferes,usuarios,paradas,buses,historial_pagos,horarios,viajes
     working_dir: /app
-    entrypoint: ["sh", "-c", "echo 'Arrancando ingestor1…'; exec node black_magic.js"]
+    entrypoint: ["sh", "-c", "echo 'Arrancando ingestor1…'; sleep 200; exec node black_magic.js"]
     restart: unless-stopped
 
   ingestor2:
@@ -235,9 +278,9 @@ services:
       - CASSANDRA_USERNAME=cassandra
       - CASSANDRA_PASSWORD=cassandra
       - CASSANDRA_KEYSPACE=transit
-      - TOPICS=choferes,usuarios,paradas,buses,historial_pagos,historial_recorrido_real,viajes
+      - TOPICS=choferes,usuarios,paradas,buses,historial_pagos,horarios,viajes
     working_dir: /app
-    entrypoint: ["sh", "-c", "echo 'Arrancando ingestor2…'; exec node black_magic.js"]
+    entrypoint: ["sh", "-c", "echo 'Arrancando ingestor2…'; sleep 200; exec node black_magic.js"]
     restart: unless-stopped
 
 volumes:
