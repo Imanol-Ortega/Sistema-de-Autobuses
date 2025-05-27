@@ -5,13 +5,16 @@ export async function login(email, password) {
     return { success: false, message: 'Credenciales incorrectas' };
 }
 
-export async function getBuses() {
-    return [
-        { id: 1, lat: -27.3368, lon: -55.8661 },
-        { id: 2, lat: -27.3391, lon: -55.8642 },
-        { id: 3, lat: -27.3315, lon: -55.8683 },
-    ];
-}
+export const getBuses = async () => {
+    try {
+        const response = await fetch("http://192.168.0.58:5000/api/buses");
+        const data = await response.json();  
+        return data;
+    } catch (error) {
+        console.error("Error al obtener buses:", error);
+        return [];
+    }
+};
 
 export function getHorarios() {
     return [
