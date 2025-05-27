@@ -115,10 +115,9 @@ class UserService {
       const token = jwt.sign(
         { user_id: user.user_id, email: user.email },
         authConfig.jwtSecret,
-        { expiresIn: '2h' }
+        { expiresIn: '24h' }
       );
 
-      // No devuelvas la contraseña
       const { password: _, ...safeUser } = user;
 
       return { user: safeUser, token };

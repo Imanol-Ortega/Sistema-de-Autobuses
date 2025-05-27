@@ -8,14 +8,16 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { login } from '../services/api';
+import { useUser } from '../hooks/user';
 
 export default function LoginScreen({ navigation }) {
+  const { loginUser } = useUser();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleLogin = async () => {
-    const res = await login(email, password);
+    const res = await loginUser(email, password);
+    console.log(res);
     if (res.success) {
       navigation.replace('Inicio');
     } else {

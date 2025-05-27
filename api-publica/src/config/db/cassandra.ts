@@ -1,7 +1,7 @@
 import { Client } from 'cassandra-driver';
 
 export const cassandraClient = new Client({
-  contactPoints: ['127.0.0.1'],
+  contactPoints: ['cassandra'],
   localDataCenter: 'dc1',
   keyspace: 'transit',
 });

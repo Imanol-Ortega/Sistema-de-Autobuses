@@ -1,22 +1,19 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useUser } from '../hooks/user';
 
 export default function ProfileScreen({ navigation }) {
-  const [user] = useState({
-    nombre: 'Juan Pérez',
-    saldo: 18500,
-    viajes: [
-      { id: '1', destino: 'Terminal', fecha: '2025-05-15 08:30' },
-      { id: '2', destino: 'Campus', fecha: '2025-05-16 13:45' },
-      { id: '3', destino: 'Centro', fecha: '2025-05-17 18:10' },
-    ],
-  });
+  const { user, logoutUser } = useUser();
 
-  const cerrarSesion = () => {
-    navigation.replace('Login');
-  };
-
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.titulo}>👤 Perfil de Usuario</Text>
+        <Text style={styles.valor}>No hay usuario conectado</Text>
+      </View>
+    );
+  }
   return (
     <View style={styles.container}>
       <Text style={styles.titulo}>👤 Perfil de Usuario</Text>
@@ -30,7 +27,7 @@ export default function ProfileScreen({ navigation }) {
       </View>
 
       <Text style={styles.subtitulo}>🚌 Viajes Realizados</Text>
-      <FlatList
+      {/* <FlatList
         data={user.viajes}
         keyExtractor={item => item.id}
         renderItem={({ item }) => (
@@ -41,9 +38,9 @@ export default function ProfileScreen({ navigation }) {
             </Text>
           </View>
         )}
-      />
+      /> */}
 
-      <TouchableOpacity style={styles.botonCerrar} onPress={cerrarSesion}>
+      <TouchableOpacity style={styles.botonCerrar} onPress={logoutUser}>
         <Ionicons name="log-out-outline" size={20} color="white" />
         <Text style={styles.botonTexto}>Cerrar sesión</Text>
       </TouchableOpacity>

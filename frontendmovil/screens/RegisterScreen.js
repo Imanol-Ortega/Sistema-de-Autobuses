@@ -9,22 +9,28 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { useUser } from '../hooks/user';
 
 export default function RegisterScreen({ navigation }) {
+  const { createUser } = useUser();
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleRegistro = () => {
+  const handleRegistro = async () => {
     if (!nombre || !email || !password) {
       Alert.alert('Error', 'Por favor completá todos los campos.');
       return;
     }
 
-    // Aquí es donde se conectaría la API real
-    console.log({ nombre, email, password });
-    Alert.alert('Éxito', 'Usuario registrado correctamente');
-    navigation.replace('Login');
+    const result = await createUser(nombre, email, password);
+
+    if (result.success) {
+      Alert.alert('Éxito', 'Usuario registrado correctamente');
+      navigation.replace('Login');
+    } else {
+      Alert.alert('Error', result.message || 'Error al registrar usuario');
+    }
   };
 
   return (

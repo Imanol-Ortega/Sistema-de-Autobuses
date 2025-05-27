@@ -1,9 +1,31 @@
-export async function login(email, password) {
-  if (email === 'test@correo.com' && password === '1234') {
-    return { success: true, token: 'mock-token-123' };
+import { createUser, loginUser } from './_requests';
+
+export const login = async (email, password) => {
+  try {
+    console.log('Intentando iniciar sesión con:', email);
+    const response = await loginUser(email, password);
+    if (response) {
+      return { success: true, message: 'Inicio de sesión exitoso', response };
+    } else {
+      return { success: false, message: 'Credenciales incorrectas' };
+    }
+  } catch (error) {
+    console.log(JSON.stringify(error, null, 2));
+
+    return { success: false, message: 'Credenciales incorrectas' };
   }
-  return { success: false, message: 'Credenciales incorrectas' };
-}
+};
+
+export const register = async (nombre, email, password) => {
+  try {
+    const response = await createUser(nombre, password, email);
+    if (response) {
+      return { success: true, message: 'Usuario creado exitosamente', response };
+    }
+  } catch (error) {
+    return { success: false, message: 'Credenciales incorrectas' };
+  }
+};
 
 export const getBuses = async () => {
   try {

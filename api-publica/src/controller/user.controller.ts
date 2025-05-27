@@ -33,6 +33,7 @@ export const Login = async (req: Request, res: Response): Promise<any> => {
     if (!password || !email) {
       return res.status(400).json({ error: "Email and password are required" });
     }
+
     const response = await userService.loginUser(email, password);
     return successResponse({ response }, res);
 
