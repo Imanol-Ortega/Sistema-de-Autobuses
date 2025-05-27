@@ -26,6 +26,8 @@ CREATE TABLE IF NOT EXISTS transit.usuarios (
   saldo      text
 );
 
+CREATE INDEX IF NOT EXISTS ON transit.usuarios (email);
+
 -- 4. Tabla de paradas
 CREATE TABLE IF NOT EXISTS transit.paradas (
   parada_id  uuid PRIMARY KEY,
