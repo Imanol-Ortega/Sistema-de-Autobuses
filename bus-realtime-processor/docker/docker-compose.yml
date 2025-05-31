@@ -1,0 +1,88 @@
+# elimina o comenta la línea version: si la tenías
+services:
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"  # listener externo para tu PC
+
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+
+      # escucha en dos interfaces
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092
+
+      # anuncia cada listener bajo el host adecuado (sin comentarios dentro)
+      
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092"
+      # KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092,PLAINTEXT_HOST://192.168.1.100:29092"
+      
+
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+
+      # crea el topic al arrancar
+      KAFKA_CREATE_TOPICS: "bus-updates:1:1"
+
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+
+
+
+  spark:
+    build:
+      # context apunta a la carpeta raíz de tu proyecto,
+      # que contiene src/, config/, graphs/, requirements.txt
+      context: ..
+      dockerfile: docker/spark/Dockerfile
+    image: bus-processor-spark:latest
+    container_name: spark-processor
+    user: root
+    depends_on:
+      - kafka
+    working_dir: /app
+    # en tiempo de desarrollo, monta el código vivo si quieres:
+    volumes:
+      - ../src:/app/src
+      - ../config:/app/config
+      - ../graphs:/app/graphs
+      - ../requirements.txt:/app/requirements.txt
+      - ./spark/conf/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf
+
+    environment:
+      SPARK_MASTER: local[*]
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      HADOOP_USER_NAME: root
+      USER: root
+
+    command: >
+      spark-submit
+        --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.0
+        --master local[*]
+        --conf spark.sql.shuffle.partitions=2
+        --conf spark.driver.memory=1g
+        src/streaming_job.py
+
+
+  simulator:
+    build:
+      context: ../graphs     # sube un nivel y entra en graphs/
+      dockerfile: graphs/Dockerfile  # procura que apunte aquí
+    depends_on:
+      - kafka
+    # networks:
+    #   - default21

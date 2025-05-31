@@ -1,0 +1,11 @@
+# genera_graph.py (puedes correrlo localmente antes de levantar Docker)
+import networkx as nx
+
+G = nx.Graph()
+# Ejemplo: un par de nodos y una arista
+G.add_node("A")
+G.add_node("B")
+G.add_edge("A", "B", length_km=1.2, weight=1.2) 
+
+nx.write_gpickle(G, "graphs/route_graph.gpickle")
+print("route_graph.gpickle creado en ./graphs")

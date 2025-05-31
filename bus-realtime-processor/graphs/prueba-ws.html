@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>🚌 Monitor WebSocket</title>
+  <style>
+    body { font-family: monospace; background: #111; color: #0f0; padding: 20px; }
+    h2 { color: #fff; }
+    #log { max-height: 80vh; overflow-y: auto; border: 1px solid #444; padding: 10px; background: #000; }
+    .msg { margin-bottom: 10px; white-space: pre-line; border-bottom: 1px solid #333; padding-bottom: 5px; }
+  </style>
+</head>
+<body>
+  <h2>🟢 WebSocket conectado</h2>
+  <div id="log">Esperando datos de Kafka...\n</div>
+
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  <script>
+    const socket = io("http://192.168.1.100:5000");  // ⚠️ Cambiá por tu IP
+    const log = document.getElementById("log");
+
+    function logMessage(text) {
+      const div = document.createElement("div");
+      div.className = "msg";
+      div.textContent = text;
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    socket.on("connect", () => {
+      logMessage("✅ Conectado al WebSocket");
+    });
+
+    socket.on("bus-update", (data) => {
+      const bus = typeof data === "string" ? JSON.parse(data) : data;
+      const time = new Date(bus.timestamp * 10).toLocaleTimeString();
+      const mensaje = `🚌 ${bus.bus_id} - Ruta ${bus.route_id}
+📍 ${bus.lat.toFixed(5)}, ${bus.lon.toFixed(5)}
+🚀 Velocidad: ${bus.speed} km/h
+🕒 ${time}`;
+      logMessage(mensaje);  // SE AGREGA CADA VEZ
+    });
+
+    socket.on("disconnect", () => {
+      logMessage("🔌 Desconectado del WebSocket");
+    });
+  </script>
+</body>
+</html>
