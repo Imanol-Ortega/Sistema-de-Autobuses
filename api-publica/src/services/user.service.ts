@@ -89,6 +89,69 @@ class UserService {
     }
   }
 
+  async CargaSaldos(email: string, monto: number): Promise<any> {
+    const query = `
+      UPDATE transit.usuarios
+      SET saldo = saldo + ?
+      WHERE email = ?
+    `;
+
+    const params = [monto, email];
+
+    try {
+      await cassandraClient.execute(query, params, { prepare: true });
+      console.log(`Saldo cargado correctamente para el usuario con correo: ${email}`);
+
+      try{
+          const query = `
+          SELECT saldo from transit.usuarios
+          WHERE email = ?`;
+          const params = [email];
+          const res = await cassandraClient.execute(query, params, { prepare: true });
+          console.log(`Saldo actual del usuario con correo: ${res}`);
+          return res
+      }catch(error){
+        console.error('Error en carga de saldo:', error);
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error en carga de saldo:', error);
+      throw error;
+    }
+  }
+
+  async restaSaldos(email: string, monto: number): Promise<any> {
+    const query = `
+      UPDATE transit.usuarios
+      SET saldo = saldo - ?
+      WHERE email = ?
+    `;
+
+    const params = [monto, email];
+
+    try {
+      await cassandraClient.execute(query, params, { prepare: true });
+      console.log(`Saldo restado correctamente para el usuario con correo: ${email}`);
+
+      try{
+          const query = `
+          SELECT saldo from transit.usuarios
+          WHERE email = ?`;
+          const params = [email];
+          const res = await cassandraClient.execute(query, params, { prepare: true });
+          console.log(`Saldo actual del usuario con correo: ${res}`);
+          return res
+      }catch(error){
+        console.error('Error en descuento de saldo:', error);
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error en descuento de saldo:', error);
+      throw error;
+    }
+  }
+
+
   async loginUser(email: string, password: string): Promise<{ user: Omit<User, 'password'>; token: string } | null> {
     const query = 'SELECT * FROM transit.usuarios WHERE email = ?';
     const params = [email];
