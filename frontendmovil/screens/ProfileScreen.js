@@ -39,7 +39,7 @@ export default function ProfileScreen({ navigation }) {
           </View>
         )}
       /> */}
-
+      
       <TouchableOpacity style={styles.botonCerrar} onPress={logoutUser}>
         <Ionicons name="log-out-outline" size={20} color="white" />
         <Text style={styles.botonTexto}>Cerrar sesión</Text>
