@@ -1,189 +1,149 @@
-import random
-import time
-import json
+#!/usr/bin/env python3
+# simulador_kafka.py
+import json, random, time, uuid
 from datetime import datetime
 from kafka import KafkaProducer
 from geopy.distance import geodesic
 from faker import Faker
 
-# -----------------------
-# CONFIGURACIÓN KAFKA
-# -----------------------
-BOOTSTRAP_SERVERS = ["localhost:29092"]  # nombre del servicio kafka en docker-compose
-TOPIC = "bus-updates"
-SEND_INTERVAL = 5  # segundos
+# ─────────────────────────────────────────────
+# CONFIG
+# ─────────────────────────────────────────────
+BOOTSTRAP_SERVERS       = ["localhost:29092"]
+TOPIC                   = "bus-updates"
+SEND_INTERVAL_SEC       = 3       # intervalo de envío de posición
+ROUTE_REBROADCAST_EACH  = 300     # seg: re-emitir definición de rutas
 
-# -----------------------
-# SIMULADOR DE BUSES
-# -----------------------
-class BusSimulator:
-    def __init__(self, num_buses=6):
-        self.fake = Faker()
-        self.num_buses = num_buses
-        self.buses = []
-        self.routes = []
-        self.landmarks = []
-        self.traffic_conditions = ["light", "moderate", "heavy", "congested"]
-        self.traffic_multipliers = {
-            "light": 1.0, "moderate": 1.3, "heavy": 1.7, "congested": 2.5
-        }
-        self.current_traffic = {}
-        self.DEFAULT_ZONE = "DEFAULT_ZONE"
-        self.DEFAULT_TRAFFIC = "moderate"
+faker = Faker()
 
-        self._initialize_system()
+# ─────────────────────────────────────────────
+# LANDMARKS (paradas)
+# ─────────────────────────────────────────────
+landmarks = [
+    (-27.3085638667, -55.8884822114, "PARADA 1"),   # 0
+    (-27.3134889556, -55.8780197261, "PARADA 2"),   # 1
+    (-27.3147026803, -55.8762959649, "PARADA 3"),   # 2
+    (-27.3242723978, -55.8735415691, "PARADA 4"),   # 3
+    (-27.3269013551, -55.8732438484, "PARADA 5"),   # 4
+    (-27.3264618678, -55.8672731150, "PARADA 6"),   # 5
+    (-27.3258148425, -55.8597094420, "PARADA 7"),   # 6
+    (-27.3349032591, -55.8586940688, "PARADA 8"),   # 7
+    (-27.3432235333, -55.8579053290, "PARADA 9"),   # 8
+    (-27.3741790112, -55.8137484058, "PARADA 10"),  # 9
+    (-27.3725360932, -55.8194159387, "PARADA 11"),  # 10
+    (-27.3722219356, -55.8244287899, "PARADA 12"),  # 11
+    (-27.3726557252, -55.8303089557, "PARADA 13"),  # 12
+    (-27.3701733163, -55.8387554735, "PARADA 18"),  # 13
+    (-27.3633790264, -55.8465142557, "PARADA 20"),  # 14
+    (-27.3585112752, -55.8497963503, "PARADA 22"),  # 15
+    (-27.3533942114, -55.8580622292, "PARADA 23"),  # 16
+    (-27.3479150316, -55.8583032464, "PARADA 24"),  # 17
+    (-27.3404496917, -55.8579346412, "PARADA 25"),  # 18
+    (-27.3571649948, -55.7620587944, "PARADA 26"),  # 19
+    (-27.3355183561, -55.7791595991, "PARADA 27"),  # 20
+    (-27.3164170350, -55.8004256694, "PARADA 28"),  # 21
+    (-27.2940902549, -55.8254245882, "PARADA 29"),  # 22
+    (-27.3057660467, -55.8378581266, "PARADA 30"),  # 23
+    (-27.3147302533, -55.8515384148, "PARADA 31"),  # 24
+    (-27.3230896314, -55.8571498283, ""),           # 25
+    (-27.3573330969, -55.7777356189, "PARADA 32"),  # 26
+    (-27.3578575856, -55.7843492412, "PARADA 33"),  # 27
+    (-27.3515316649, -55.8001458686, "PARADA 34"),  # 28
+    (-27.3486789156, -55.8171791021, "PARADA 35"),  # 29
+    (-27.3452491085, -55.8310005607, "PARADA 36"),  # 30
+]
 
-    def _initialize_system(self):
-        self._generate_landmarks()
-        self._generate_routes()
-        self._generate_buses()
-        self._initialize_traffic_conditions()
+# ─────────────────────────────────────────────
+# RUTAS (solo índices válidos 0-30)
+# ─────────────────────────────────────────────
+route_indices = [
+    [0,1,2,3,4,5,6,8,7],                      # Línea 1 – Roja
+    [9,10,11,12,13,14,15,16,17,18],           # Línea 2 – Azul
+    [19,20,21,22,23,24,25],                   # Línea 3 – Verde
+    [26,27,28,29,30,6,7]                      # Línea 4 – Morada
+]
+route_colors = ['#FF0000', '#0000FF', '#00FF00', '#800080']
 
-    def _generate_landmarks(self):
-        self.landmarks = [
-            (-27.30856, -55.88848, "PARADA 1"),
-            (-27.31348, -55.87802, "PARADA 2"),
-            (-27.31470, -55.87630, "PARADA 3"),
-            (-27.32427, -55.87354, "PARADA 4"),
-            (-27.32690, -55.87324, "PARADA 5"),
-            (-27.32646, -55.86727, "PARADA 6"),
-            (-27.32581, -55.85971, "PARADA 7"),
-            (-27.33490, -55.85869, "PARADA 8"),
+routes = [
+    {
+        "id": i+1,
+        "name": f"Línea {i+1}",
+        "color": route_colors[i],
+        "stops": [
+            {"name": landmarks[idx][2], "position": [landmarks[idx][0], landmarks[idx][1]]}
+            for idx in idxs
         ]
+    }
+    for i,idxs in enumerate(route_indices)
+]
 
-    def _generate_routes(self):
-        route_definitions = [[0, 1, 2, 3, 4, 5, 6, 7]]
-        for i, indices in enumerate(route_definitions, 1):
-            stops = [self.landmarks[idx] for idx in indices]
-            route = {
-                "id": i,
-                "name": f"Línea {i} - {self.fake.color_name()}",
-                "stops": stops,
-                "color": "#FF0000"
-            }
-            self.routes.append(route)
+# ─────────────────────────────────────────────
+# BUSES
+# ─────────────────────────────────────────────
+NUM_BUSES = 6
+buses = []
+for bus_id in range(1, NUM_BUSES+1):
+    r = routes[(bus_id-1)%len(routes)]
+    start = r["stops"][0]["position"]
+    buses.append({
+        "id": bus_id,
+        "route_id": r["id"],
+        "route_color": r["color"],
+        "speed": random.uniform(45,60),  # km/h
+        "current_position": start[:],
+    })
 
-    def _generate_buses(self):
-        for bus_id in range(1, self.num_buses + 1):
-            route = self.routes[(bus_id - 1) % len(self.routes)]
-            start = route["stops"][0]
-            bus = {
-                "id": bus_id,
-                "plate": self.fake.license_plate(),
-                "route_id": route["id"],
-                "route_name": route["name"],
-                "route_color": route["color"],
-                "current_position": [start[0], start[1]],
-                "speed": random.uniform(50, 60),
-                "capacity": random.choice([30, 40, 50]),
-                "passengers": random.randint(5, 45),
-                "status": "in_operation"
-            }
-            self._set_next_stop(bus)
-            self.buses.append(bus)
+def next_stop(bus):
+    r = routes[bus["route_id"]-1]
+    idx_now = min(range(len(r["stops"])),
+                  key=lambda i: geodesic(bus["current_position"], r["stops"][i]["position"]).meters)
+    return r["stops"][(idx_now+1)%len(r["stops"])]["position"]
 
-    def _set_next_stop(self, bus):
-        route = next(r for r in self.routes if r["id"] == bus["route_id"])
-        current = bus["current_position"]
-        closest = min(route["stops"], key=lambda s: geodesic(current, s[:2]).meters)
-        idx = route["stops"].index(closest)
-        next_idx = (idx + 1) % len(route["stops"])
-        bus["next_stop"] = list(route["stops"][next_idx][:2])
-        bus["next_stop_name"] = route["stops"][next_idx][2]
+# ─────────────────────────────────────────────
+# Kafka
+# ─────────────────────────────────────────────
+producer = KafkaProducer(
+    bootstrap_servers=BOOTSTRAP_SERVERS,
+    value_serializer=lambda v: json.dumps(v).encode()
+)
 
-    def _initialize_traffic_conditions(self):
-        for lm in self.landmarks:
-            self.current_traffic[lm[2]] = random.choice(self.traffic_conditions)
-        self.current_traffic[self.DEFAULT_ZONE] = self.DEFAULT_TRAFFIC
+def send(msg:dict):
+    producer.send(TOPIC, msg)
 
-    def _update_traffic(self):
-        for zone in self.current_traffic:
-            if random.random() < 0.2:
-                self.current_traffic[zone] = random.choice(self.traffic_conditions)
+def broadcast_routes():
+    send({"type":"ROUTE","timestamp":int(time.time()),"routes":routes})
 
-    def update(self):
-        self._update_traffic()
-        for bus in self.buses:
-            if bus["status"] == "in_operation":
-                self._move_bus(bus)
+print("🚍  Simulador arrancado, enviando a Kafka …")
+broadcast_routes()
+last_routes_ts = time.time()
 
-    def _get_zone_from_position(self, position):
-        for landmark in self.landmarks:
-            if geodesic(position, landmark[:2]).meters < 500:
-                return landmark[2]
-        return self.DEFAULT_ZONE
+try:
+    while True:
+        for bus in buses:
+            dest = next_stop(bus)
+            dist_km = geodesic(bus["current_position"], dest).kilometers
+            step_km = bus["speed"]/3600 * SEND_INTERVAL_SEC
+            ratio   = min(step_km/dist_km, 1)
+            bus["current_position"][0] += (dest[0]-bus["current_position"][0])*ratio
+            bus["current_position"][1] += (dest[1]-bus["current_position"][1])*ratio
 
-    def _move_bus(self, bus):
-        pos = bus["current_position"]
-        next_pos = bus["next_stop"]
-        dist = geodesic(pos, next_pos).kilometers
-        direction = [next_pos[0] - pos[0], next_pos[1] - pos[1]]
+            send({
+                "type":"BUS",
+                "timestamp":int(time.time()),
+                "bus_id":f"bus-{bus['id']}",
+                "route_id":bus["route_id"],
+                "lat":bus["current_position"][0],
+                "lon":bus["current_position"][1],
+                "speed":round(bus["speed"],1)
+            })
 
-        zone = self._get_zone_from_position(pos)
-        traffic = self.current_traffic.get(zone, self.DEFAULT_TRAFFIC)
-        multiplier = self.traffic_multipliers.get(traffic, 1.3)
+        # volver a emitir rutas cada ROUTE_REBROADCAST_EACH segundos
+        if time.time()-last_routes_ts > ROUTE_REBROADCAST_EACH:
+            broadcast_routes()
+            last_routes_ts = time.time()
 
-        effective_speed = bus["speed"] / multiplier
-        t = 1 / 3600  # 1 segundo en horas
-        d = effective_speed * t
+        producer.flush()
+        time.sleep(SEND_INTERVAL_SEC)
 
-        if d >= dist:
-            bus["current_position"] = next_pos
-            self._handle_arrival(bus)
-        else:
-            ratio = d / dist
-            bus["current_position"][0] += direction[0] * ratio
-            bus["current_position"][1] += direction[1] * ratio
-
-    def _handle_arrival(self, bus):
-        self._set_next_stop(bus)
-        bus["passengers"] = max(0, min(bus["capacity"], bus["passengers"] + random.randint(-10, 15)))
-
-    def get_bus_data(self):
-        return [{
-            "id": b["id"],
-            "plate": b["plate"],
-            "route_id": b["route_id"],
-            "route_name": b["route_name"],
-            "route_color": b["route_color"],
-            "position": b["current_position"],
-            "next_stop": b["next_stop_name"],
-            "passengers": b["passengers"],
-            "capacity": b["capacity"],
-            "status": b["status"]
-        } for b in self.buses]
-
-# -----------------------
-# ENVÍO A KAFKA
-# -----------------------
-if __name__ == "__main__":
-    producer = KafkaProducer(
-        bootstrap_servers=BOOTSTRAP_SERVERS,
-        value_serializer=lambda v: json.dumps(v).encode('utf-8')
-    )
-
-    sim = BusSimulator()
-
-    print("🚍 Iniciando simulación de buses en Kafka...")
-    try:
-        while True:
-            sim.update()
-            buses = sim.get_bus_data()
-            for bus in buses:
-                message = {
-                    "bus_id": f"bus-{bus['id']}",
-                    "route_id": str(bus["route_id"]),
-                    "timestamp": int(time.time()),
-                    "lat": bus["position"][0],
-                    "lon": bus["position"][1],
-                    "speed": 30.0
-                }
-                try:
-                    producer.send(TOPIC, message)
-                    producer.flush()
-                    print("✅ Enviado:", message)
-                except Exception as e:
-                    print("❌ Error al enviar:", e)
-            time.sleep(SEND_INTERVAL)
-    except KeyboardInterrupt:
-        print("🛑 Simulación detenida.")
+except KeyboardInterrupt:
+    print("🛑  Simulador detenido.")

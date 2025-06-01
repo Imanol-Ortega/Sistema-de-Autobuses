@@ -18,6 +18,7 @@ import {
 // Importar componentes
 import StatsCard from './StatsCard';
 import DataTable from './DataTable';
+import MapView from './MapView';
 import BusForm from '../Forms/BusForm';
 import ConductorForm from '../Forms/ConductorForm';
 import UsuarioForm from '../Forms/UsuarioForm';
@@ -334,7 +335,7 @@ const AdminDashboard = () => {
             </div>
 
             {/* Estadísticas adicionales */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mb-6">
               <StatsCard
                 title="Recaudación Hoy"
                 value={stats.recaudacionHoy}
@@ -342,14 +343,6 @@ const AdminDashboard = () => {
                 icon={TrendingUp}
                 color="green"
                 prefix="Gs. "
-                loading={statsLoading}
-              />
-              <StatsCard
-                title="Promedio Pasajeros"
-                value={stats.promedioPasajeros}
-                subtitle="Por viaje"
-                icon={Users}
-                color="blue"
                 loading={statsLoading}
               />
             </div>
@@ -457,33 +450,7 @@ const AdminDashboard = () => {
         );
 
       case 'mapa':
-        return (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Mapa en Tiempo Real</h3>
-              <div className="flex items-center space-x-2">
-                <button className="btn-secondary">
-                  <Settings className="w-4 h-4 mr-1" />
-                  Configurar
-                </button>
-                <button className="btn-primary" onClick={handleRefreshAll}>
-                  <RefreshCw className="w-4 h-4 mr-1" />
-                  Actualizar
-                </button>
-              </div>
-            </div>
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg h-96 flex items-center justify-center flex-col border-2 border-dashed border-blue-200">
-              <MapPin className="w-16 h-16 text-blue-400 mb-4" />
-              <p className="text-xl text-blue-600 mb-2 font-semibold">Mapa Interactivo</p>
-              <p className="text-sm text-blue-500 mb-4">Listo para integración con API de ubicaciones</p>
-              <div className="flex space-x-2">
-                <span className="px-3 py-1 bg-blue-200 text-blue-800 rounded-full text-xs">GPS en tiempo real</span>
-                <span className="px-3 py-1 bg-green-200 text-green-800 rounded-full text-xs">Rutas dinámicas</span>
-                <span className="px-3 py-1 bg-purple-200 text-purple-800 rounded-full text-xs">Paradas activas</span>
-              </div>
-            </div>
-          </div>
-        );
+        return <MapView />;
 
       default:
         return null;
@@ -539,8 +506,8 @@ const AdminDashboard = () => {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${activeTab === tab.id
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                     }`}
                 >
                   <Icon className="w-4 h-4 mr-2" />

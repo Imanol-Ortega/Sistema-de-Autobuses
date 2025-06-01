@@ -1,86 +1,134 @@
-import { useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import L from 'leaflet';
-import busImg from '../assets/icons/bus.png';
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  Polyline,
+  CircleMarker,
+} from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 
+import busImg from '../assets/icons/movil.png';
+
+// Icono genérico del colectivo
 const busIcon = new L.Icon({
   iconUrl: busImg,
   iconSize: [32, 32],
   iconAnchor: [16, 32],
 });
 
-function generarBusesIniciales() {
-  const baseLat = -27.3315;
-  const baseLng = -55.8664;
-  return Array.from({ length: 5 }).map((_, i) => ({
-    id: i + 1,
-    lat: baseLat + (Math.random() - 0.5) * 0.02,
-    lng: baseLng + (Math.random() - 0.5) * 0.02,
-    direction: 'Norte',
-  }));
-}
-
 export default function BusMap() {
-  const { token } = useAuth();
   const navigate = useNavigate();
-  const [buses, setBuses] = useState(generarBusesIniciales());
+  const wsRef = useRef();
 
+  const [routes, setRoutes]   = useState([]);   // rutas + paradas que llega en un único mensaje ROUTE
+  const [buses,  setBuses]    = useState({});   // diccionario bus_id → obj posición
+
+  // 1️⃣ Conectarse al WebSocket y escuchar
   useEffect(() => {
-    if (!token) {
-      navigate('/');
-      return;
-    }
+    const socket = new WebSocket('ws://localhost:8080/ws'); // ajusta host/puerto
+    wsRef.current = socket;
 
-    const interval = setInterval(() => {
-      setBuses((prevBuses) =>
-        prevBuses.map((bus) => ({
-          ...bus,
-          lat: bus.lat + (Math.random() - 0.5) * 0.001,
-          lng: bus.lng + (Math.random() - 0.5) * 0.001,
-          direction: ['Norte', 'Sur', 'Este', 'Oeste'][Math.floor(Math.random() * 4)],
-        }))
-      );
-    }, 3000);
+    socket.onmessage = (evt) => {
+      try {
+        const msg = JSON.parse(evt.data);
+        if (msg.type === 'ROUTE') {
+          // Mensaje de definición completa de rutas
+          setRoutes(msg.routes);
+        }
+        if (msg.type === 'BUS') {
+          // Mensaje de posición de un colectivo
+          setBuses((prev) => ({
+            ...prev,
+            [msg.bus_id]: {
+              id: msg.bus_id,
+              lat: msg.lat,
+              lon: msg.lon,
+              route_id: msg.route_id,
+              speed: msg.speed,
+            },
+          }));
+        }
+      } catch (e) {
+        console.error('Mensaje WS malformado', e);
+      }
+    };
 
-    return () => clearInterval(interval);
-  }, [token, navigate]);
+    socket.onerror = (err) => console.error('WS error', err);
+    socket.onclose  = ()   => console.log('WS cerrado');
+
+    return () => socket.close();
+  }, []);
+
+  /* helpers ------------------------------------------------------------ */
+  const busesArray = Object.values(buses);
 
   return (
     <div style={{ height: '100vh', width: '100vw', position: 'relative' }}>
-      {/* Botón para volver a /home */}
+      {/* Botón volver */}
       <button
         onClick={() => navigate('/home')}
         style={{
           position: 'absolute',
-          top: '20px',
-          left: '50px',
+          top: 20,
+          left: 30,
           zIndex: 1000,
-          backgroundColor: '#007bff',
+          background: '#007bff',
           color: '#fff',
           border: 'none',
-          borderRadius: '8px',
-          padding: '10px 16px',
-          boxShadow: '0 2px 6px rgba(0, 0, 0, 0.3)',
+          borderRadius: 6,
+          padding: '8px 14px',
           cursor: 'pointer',
-          fontWeight: 'bold',
         }}
       >
         ← Volver
       </button>
 
-      <MapContainer center={[-27.3315, -55.8664]} zoom={13} style={{ height: '100%', width: '100%' }}>
-        <TileLayer
-          attribution="&copy; OpenStreetMap"
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        {buses.map((bus) => (
-          <Marker key={bus.id} position={[bus.lat, bus.lng]} icon={busIcon}>
+      <MapContainer
+        center={[-27.33, -55.86]}
+        zoom={13}
+        style={{ height: '100%', width: '100%' }}
+      >
+        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+
+        {/* Rutas */}
+        {routes.map((rt) => (
+          <Polyline
+            key={`route-${rt.id}`}
+            positions={rt.stops.map((s) => s.position)}
+            color={rt.color}
+            weight={4}
+          />
+        ))}
+
+        {/* Paradas */}
+        {routes.flatMap((rt) =>
+          rt.stops.map((st, idx) => (
+            <CircleMarker
+              key={`stop-${rt.id}-${idx}`}
+              center={st.position}
+              radius={5}
+              pathOptions={{ color: '#000' }}
+            >
+              {st.name && <Popup>{st.name}</Popup>}
+            </CircleMarker>
+          ))
+        )}
+
+        {/* Buses en vivo */}
+        {busesArray.map((bus) => (
+          <Marker
+            key={bus.id}
+            position={[bus.lat, bus.lon]}
+            icon={busIcon}
+          >
             <Popup>
-              Bus #{bus.id} <br />
-              Dirección: {bus.direction}
+              🚌 <b>{bus.id}</b><br />
+              Ruta: {bus.route_id}<br />
+              Vel: {bus.speed} km/h
             </Popup>
           </Marker>
         ))}
