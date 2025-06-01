@@ -7,7 +7,7 @@ export const injectStore = s => {
 };
 
 export const Api = axios.create({
-  baseURL: 'http://192.168.100.5:3000',
+  baseURL: 'http://192.168.25.90:3000',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -15,9 +15,6 @@ export const Api = axios.create({
 });
 
 Api.interceptors.request.use(config => {
-  const state = store.getState();
-  if (state.user.token && config.headers) {
-    config.headers.Authorization = `Bearer ${state.auth.accessToken}`;
-  }
+console.log("axios del serv", config.baseURL,config.url)
   return config;
 });

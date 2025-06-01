@@ -1,4 +1,5 @@
 import { createUser, loginUser } from './_requests';
+import { Api } from './axios';
 
 export const login = async (email, password) => {
   try {
@@ -44,4 +45,27 @@ export function getHorarios() {
     { id: 2, linea: '2B', hora: '07:15', destino: 'San Pedro' },
     { id: 3, linea: '3C', hora: '08:45', destino: 'Cambyretá' },
   ];
-}
+};
+const cargarSaldo = async (monto, email) => {
+  const valor = parseInt(monto);
+ 
+  try {
+    const response = await Api.post('/api/usuarios/CargaSaldo', {
+      monto: valor,
+      email: email, 
+    });
+
+    if (response.status === 200) {
+      const { nuevoSaldo } = response.data;
+      Alert.alert('✅ Saldo cargado', `Nuevo saldo: ₲${nuevoSaldo}`);
+      setMonto('');
+    } else {
+      Alert.alert('❌ Error', 'No se pudo cargar el saldo.');
+    }
+  } catch (error) {
+    console.error(error);
+    Alert.alert('❌ Error de red', 'Verifica tu conexión o intenta de nuevo más tarde.');
+  }
+};
+
+

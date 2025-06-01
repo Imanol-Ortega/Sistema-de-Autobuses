@@ -45,9 +45,78 @@ export const Login = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
-export const updateUser = async (req: Request, res: Response) => {
+export const cargaSaldo = async (req: Request, res: Response): Promise<any> => {
+  console.log("Entra funcion cargaSaldo en api");
+  //llamado al api
+  try {
+    console.log("ingresa primer try de funcion cargaSaldo en api");
+    const { monto, user_id } = req.body;
+    if (!monto || !user_id) {
+      return res.status(400).json({ error: "user_id and monto are required" });
+    }
+
+    const response = await userService.CargaSaldos(monto, user_id);
+    console.log("funcion cargaSaldo en api. response: ", response);
+    successResponse({ response }, res);
+
+  } catch (error) {
+    console.error("Error updating user:", error);
+    res.status(400).json({
+      error: "Error updating user",
+    });
+  }
+}
+
+export const restaSaldo = async (req: Request, res: Response): Promise<any> => {
+  console.log("Entra funcion restaSaldo en api");
+  try {
+    console.log("ingresa primer try de funcion restaSaldo en api");
+    const { monto, user_id } = req.body;
+    if (!monto || !user_id) {
+      return res.status(400).json({ error: "user_id and monto are required" });
+    }
+
+    const response = await userService.restaSaldos(monto, user_id);
+    console.log("funcion restaSaldo en api. response: ", response);
+    successResponse({ response }, res);
+
+  } catch (error) {
+    console.error("Error updating saldo:", error);
+    res.status(400).json({
+      error: "Error updating user",
+    });
+  }
+}
+
+export const pagar = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const { bus_id, user_id } = req.body;
+    const monto = 5000;
+    if (!monto || !user_id || !bus_id) {
+      return res.status(400).json({ error: "user_id and monto are required" });
+    }
+
+    const saldoSuficiente = await userService.verificarSaldoSuficiente(user_id, monto);
+
+    if (!saldoSuficiente) {
+      return res.status(400).json({ error: "Saldo insuficiente" });
+    }
+
+    await userService.restaSaldos(monto, user_id);
+
+    await userService.pagar(monto, bus_id);
+
+    successResponse({ response: "ok" }, res);
+
+  } catch (error) {
+    console.error("Error updating saldo:", error);
+    res.status(400).json({
+      error: "Error updating user",
+    });
+  }
+}
+
+export const deleteUser = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const userData = req.body;
   successResponse({ response: "ok" }, res);
 };
-

@@ -89,6 +89,105 @@ class UserService {
     }
   }
 
+
+  async CargaSaldos(monto: number, user_id: string): Promise<any> {
+    console.log("user_id: ", user_id, " monto: ", monto);
+
+    try {
+
+      // Obtener el saldo actual
+      const consultaSaldo = `
+      SELECT saldo FROM transit.usuarios
+      WHERE user_id = ?
+    `;
+      const resultadoSaldo = await cassandraClient.execute(consultaSaldo, [user_id], { prepare: true });
+
+      // Convertir saldo de string a número
+      const saldoActualString = resultadoSaldo.rows[0]?.saldo ?? "0";
+      const saldoActual = parseFloat(saldoActualString);
+      const nuevoSaldo = saldoActual + monto;
+
+      // Actualizar el saldo (convertido nuevamente a string)
+      const updateQuery = `
+      UPDATE transit.usuarios
+      SET saldo = ?
+      WHERE user_id = ?
+    `;
+      await cassandraClient.execute(updateQuery, [String(nuevoSaldo), user_id], { prepare: true });
+
+      console.log(`✅ Saldo actualizado correctamente. Nuevo saldo: ${nuevoSaldo}`);
+
+      return { user_id, saldo: nuevoSaldo };
+
+    } catch (error) {
+      console.error('❌ Error en carga de saldo:', error);
+      throw error;
+    }
+  }
+
+  async restaSaldos(monto: number, user_id: string): Promise<any> {
+    try {
+      const consultaSaldo = `
+      SELECT saldo FROM transit.usuarios
+      WHERE user_id = ?
+    `;
+      const resultadoSaldo = await cassandraClient.execute(consultaSaldo, [user_id], { prepare: true });
+
+      // Convertir saldo de string a número
+      const saldoActualString = resultadoSaldo.rows[0]?.saldo ?? "0";
+      const saldoActual = parseFloat(saldoActualString);
+      const nuevoSaldo = saldoActual - monto;
+
+      // Actualizar el saldo (convertido nuevamente a string)
+      const updateQuery = `
+      UPDATE transit.usuarios
+      SET saldo = ?
+      WHERE user_id = ?
+    `;
+      await cassandraClient.execute(updateQuery, [String(nuevoSaldo), user_id], { prepare: true });
+
+      console.log(`✅ Saldo actualizado correctamente. Nuevo saldo: ${nuevoSaldo}`);
+
+      return { user_id, saldo: nuevoSaldo };
+
+    } catch (error) {
+      console.error('❌ Error en carga de saldo:', error);
+      throw error;
+    }
+  }
+
+
+  async pagar(monto: number, bus_id: number): Promise<any> {
+    try {
+      const consultaSaldo = `
+      SELECT saldo FROM transit.buses
+      WHERE bus_id = ?
+    `;
+      const resultadoSaldo = await cassandraClient.execute(consultaSaldo, [bus_id], { prepare: true });
+
+      // Convertir saldo de string a número
+      const saldoActualString = resultadoSaldo.rows[0]?.saldo ?? "0";
+      const saldoActual = parseFloat(saldoActualString);
+      const nuevoSaldo = saldoActual + monto;
+
+      const updateQuery = `
+      UPDATE transit.buses
+      SET saldo = ?
+      WHERE bus_id = ?
+    `;
+      await cassandraClient.execute(updateQuery, [String(nuevoSaldo), bus_id], { prepare: true });
+
+      console.log(`✅ Saldo actualizado correctamente. Nuevo saldo: ${nuevoSaldo}`);
+
+      return { bus_id, saldo: nuevoSaldo };
+
+    } catch (error) {
+      console.error('❌ Error en carga de saldo:', error);
+      throw error;
+    }
+  }
+
+
   async loginUser(email: string, password: string): Promise<{ user: Omit<User, 'password'>; token: string } | null> {
     const query = 'SELECT * FROM transit.usuarios WHERE email = ?';
     const params = [email];
@@ -127,7 +226,34 @@ class UserService {
     }
   }
 
+  async verificarSaldoSuficiente(user_id: string, monto: number): Promise<boolean> {
+    try {
+      const consultaSaldo = `
+      SELECT saldo FROM transit.usuarios
+      WHERE user_id = ?
+    `;
+      const resultadoSaldo = await cassandraClient.execute(consultaSaldo, [user_id], { prepare: true });
 
+      if (resultadoSaldo.rowLength === 0) {
+        console.error('Usuario no encontrado');
+        return false;
+      }
+
+      const saldoActualString = resultadoSaldo.rows[0].saldo ?? "0";
+      const saldoActual = parseFloat(saldoActualString);
+
+      if (saldoActual >= monto) {
+        console.log(`Saldo suficiente: ${saldoActual} >= ${monto}`);
+        return true;
+      } else {
+        console.log(`Saldo insuficiente: ${saldoActual} < ${monto}`);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error verificando saldo suficiente:', error);
+      return false;
+    }
+  }
 
 
 }
