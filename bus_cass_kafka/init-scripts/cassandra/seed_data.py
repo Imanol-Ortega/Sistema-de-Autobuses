@@ -43,8 +43,8 @@ def insert_seed_data(session):
     for i, did in enumerate(driver_ids, start=1):
         bid = f"BUS{i}"
         session.execute("""
-            INSERT INTO buses (bus_id, plate, route_id, route_name, route_color, capacity, status, driver_id)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO buses (bus_id, plate, route_id, route_name, route_color, capacity, status, driver_id, saldo)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             bid,
             fake.bothify(text='??-####'),
@@ -53,7 +53,8 @@ def insert_seed_data(session):
             random.choice(['Red','Blue','Green','Yellow']),
             random.randint(30,80),
             random.choice(['active','inactive']),
-            did
+            did,
+            0
         ))
 
     # 3) Paradas

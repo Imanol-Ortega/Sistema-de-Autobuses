@@ -47,7 +47,8 @@ CREATE TABLE IF NOT EXISTS transit.buses (
   route_color  text,
   capacity     int,
   status       text,
-  driver_id    uuid
+  driver_id    uuid,
+  saldo        int,
 );
 
 -- 6. Historial de pagos
