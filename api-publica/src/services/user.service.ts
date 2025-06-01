@@ -89,36 +89,156 @@ class UserService {
     }
   }
 
-  async CargaSaldos(email: string, monto: number): Promise<any> {
-    const query = `
-      UPDATE transit.usuarios
-      SET saldo = saldo + ?
-      WHERE email = ?
+  // async CargaSaldos(email: string, monto: number): Promise<any> {
+  //   const query = `
+  //     UPDATE transit.usuarios
+  //     SET saldo = saldo + ?
+  //     WHERE email = ?
+  //   `;
+
+  //   const params = [monto, email];
+
+  //   try {
+  //     await cassandraClient.execute(query, params, { prepare: true });
+  //     console.log(`Saldo cargado correctamente para el usuario con correo: ${email}`);
+
+  //     try{
+  //         const query = `
+  //         SELECT saldo from transit.usuarios
+  //         WHERE email = ?`;
+  //         const params = [email];
+  //         const res = await cassandraClient.execute(query, params, { prepare: true });
+  //         console.log(`Saldo actual del usuario con correo: ${res}`);
+  //         return res
+  //     }catch(error){
+  //       console.error('Error en carga de saldo:', error);
+  //       throw error;
+  //     }
+  //   } catch (error) {
+  //     console.error('Error en carga de saldo:', error);
+  //     throw error;
+  //   }
+  // }
+
+// async CargaSaldos(monto: number, email: string): Promise<any> {
+//   console.log("email: ",email, " monto: ", monto);
+//   try {
+//     if (typeof email !== 'string') {
+//       throw new TypeError(`El email debe ser un string. Recibido: ${email}`);
+//     }
+
+//     const consultaSaldo = `
+//       SELECT saldo FROM transit.usuarios
+//       WHERE email = ?
+//     `;
+//     const resultadoSaldo = await cassandraClient.execute(consultaSaldo, [email], { prepare: true });
+
+//     const saldoActual = resultadoSaldo.rows[0]?.saldo ?? 0;
+//     const nuevoSaldo = saldoActual + monto;
+
+//     const updateQuery = `
+//       UPDATE transit.usuarios
+//       SET saldo = ?
+//       WHERE email = ?
+//     `;
+//     await cassandraClient.execute(updateQuery, [nuevoSaldo, email], { prepare: true });
+//     console.log(`✅ Saldo actualizado correctamente para ${email}. Nuevo saldo: ${nuevoSaldo}`);
+
+//     return { email, saldo: nuevoSaldo };
+
+//   } catch (error) {
+//     console.error('❌ Error en carga de saldo:', error);
+//     throw error;
+//   }
+// }
+
+// async CargaSaldos(monto: number, email: string): Promise<any> {
+//   console.log("email: ", email, " monto: ", monto);
+
+//   try {
+//     if (typeof email !== 'string') {
+//       throw new TypeError(`El email debe ser un string. Recibido: ${email}`);
+//     }
+
+//     // Paso 1: Buscar el user_id con ALLOW FILTERING
+//     const buscarIdQuery = `
+//       SELECT user_id FROM transit.usuarios
+//       WHERE email = ?
+//       ALLOW FILTERING
+//     `;
+//     const buscarRes = await cassandraClient.execute(buscarIdQuery, [email], { prepare: true });
+
+//     if (buscarRes.rowLength === 0) {
+//       throw new Error(`No se encontró usuario con email: ${email}`);
+//     }
+
+//     const userId = buscarRes.first().user_id;
+
+//     // Paso 2: Obtener el saldo actual usando el user_id
+//     const consultaSaldo = `
+//       SELECT saldo FROM transit.usuarios
+//       WHERE user_id = ?
+//     `;
+//     const resultadoSaldo = await cassandraClient.execute(consultaSaldo, [userId], { prepare: true });
+
+//     const saldoActual = Number(resultadoSaldo.rows[0]?.saldo ?? 0);
+//     const montoNum = Number(monto);
+//     const nuevoSaldo = saldoActual + montoNum;
+
+//     // Paso 3: Actualizar el saldo
+//     const updateQuery = `
+//       UPDATE transit.usuarios
+//       SET saldo = ?
+//       WHERE user_id = ?
+//     `;
+//     await cassandraClient.execute(updateQuery, [nuevoSaldo, userId], { prepare: true });
+
+//     console.log(`✅ Saldo actualizado correctamente para ${email}. Nuevo saldo: ${nuevoSaldo}`);
+
+//     return { email, saldo: nuevoSaldo };
+
+//   } catch (error) {
+//     console.error('❌ Error en carga de saldo:', error);
+//     throw error;
+//   }
+// }
+
+async CargaSaldos(monto: number, user_id: string): Promise<any> {
+  console.log("user_id: ", user_id, " monto: ", monto);
+
+  try {
+
+    // Obtener el saldo actual
+    const consultaSaldo = `
+      SELECT saldo FROM transit.usuarios
+      WHERE user_id = ?
     `;
+    const resultadoSaldo = await cassandraClient.execute(consultaSaldo, [user_id], { prepare: true });
 
-    const params = [monto, email];
+    // Convertir saldo de string a número
+    const saldoActualString = resultadoSaldo.rows[0]?.saldo ?? "0";
+    const saldoActual = parseFloat(saldoActualString);
+    const nuevoSaldo = saldoActual + monto;
 
-    try {
-      await cassandraClient.execute(query, params, { prepare: true });
-      console.log(`Saldo cargado correctamente para el usuario con correo: ${email}`);
+    // Actualizar el saldo (convertido nuevamente a string)
+    const updateQuery = `
+      UPDATE transit.usuarios
+      SET saldo = ?
+      WHERE user_id = ?
+    `;
+    await cassandraClient.execute(updateQuery, [String(nuevoSaldo), user_id], { prepare: true });
 
-      try{
-          const query = `
-          SELECT saldo from transit.usuarios
-          WHERE email = ?`;
-          const params = [email];
-          const res = await cassandraClient.execute(query, params, { prepare: true });
-          console.log(`Saldo actual del usuario con correo: ${res}`);
-          return res
-      }catch(error){
-        console.error('Error en carga de saldo:', error);
-        throw error;
-      }
-    } catch (error) {
-      console.error('Error en carga de saldo:', error);
-      throw error;
-    }
+    console.log(`✅ Saldo actualizado correctamente. Nuevo saldo: ${nuevoSaldo}`);
+
+    return { user_id, saldo: nuevoSaldo };
+
+  } catch (error) {
+    console.error('❌ Error en carga de saldo:', error);
+    throw error;
   }
+}
+
+
 
   async restaSaldos(email: string, monto: number): Promise<any> {
     const query = `

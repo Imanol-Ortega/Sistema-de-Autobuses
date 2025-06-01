@@ -45,16 +45,19 @@ export const Login = async (req: Request, res: Response): Promise<any> => {
   }
 };
 
-export const cargaSaldo = async (req: Request, res: Response) => {
+export const cargaSaldo = async (req: Request, res: Response): Promise<any> => {
+  console.log("Entra funcion cargaSaldo en api");
 //llamado al api
   try {
-    const { monto, email } = req.body;
-    if (!monto || !email) {
-      return res.status(400).json({ error: "Email and monto are required" });
+    console.log("ingresa primer try de funcion cargaSaldo en api");
+    const { monto, user_id } = req.body;
+    if (!monto || !user_id) {
+      return res.status(400).json({ error: "user_id and monto are required" });
     }
 
-    const response = await userService.CargaSaldos(monto, email);
-    return successResponse({ response }, res);
+    const response = await userService.CargaSaldos(monto, user_id);
+    console.log("funcion cargaSaldo en api. response: ",response);
+    successResponse({ response }, res);
 
   } catch (error) {
     console.error("Error creating user:", error);
@@ -63,7 +66,8 @@ export const cargaSaldo = async (req: Request, res: Response) => {
     });
   }
 }
-export const restaSaldo = async (req: Request, res: Response) => {
+
+export const restaSaldo = async (req: Request, res: Response): Promise<any> => {
 
   try {
     const { monto, email } = req.body;

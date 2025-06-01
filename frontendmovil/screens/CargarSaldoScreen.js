@@ -1,6 +1,11 @@
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Api } from "../services/axios";
+import { useState } from "react";
+import { useUser } from "../hooks/user";
+
 export default function CargarSaldoScreen() {
+  const {user}= useUser()
   const [saldo, setSaldo] = useState('');
-  const { usuario } = usuario(); 
 
   const cargarSaldo = async () => {
     const valor = parseInt(saldo);
@@ -8,20 +13,18 @@ export default function CargarSaldoScreen() {
       Alert.alert('Monto inválido', 'Ingresa un valor mayor a 0');
       return;
     }
-
-    if (!usuario?.email) {
-      Alert.alert('Error', 'No se encontró el correo del usuario');
+    if (!user?.user_id) {
+      Alert.alert('Error', 'No se encontró el usuario');
       return;
     }
-
     try {
-      const response = await Api.post('/api/usuarios/CargaSaldos', {
+      const response = await Api.post('/api/usuarios/cargaSaldo', { 
         monto: valor,
-        email: usuario.email,
+        user_id: user.user_id,
       });
 
       if (response.status === 200) {
-        Alert.alert('✅ Saldo cargado', `Nuevo saldo: ₲${response.data.nuevoSaldo}`);
+        Alert.alert('✅ Saldo cargado', `Nuevo saldo: ₲${response.data.response.saldo}`);
         setSaldo('');
       } else {
         Alert.alert('❌ Error', 'No se pudo cargar el saldo.');
@@ -34,7 +37,7 @@ export default function CargarSaldoScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.titulo}>Cargar Saldo</Text>
+      <Text style={styles.titulo} >Cargar Saldo</Text>
       <TextInput
         style={styles.input}
         placeholder="Ingrese monto en ₲"

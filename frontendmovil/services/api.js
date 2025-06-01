@@ -50,7 +50,7 @@ const cargarSaldo = async (monto, email) => {
   const valor = parseInt(monto);
  
   try {
-    const response = await Api.post('/api/usuarios/CargaSaldos', {
+    const response = await Api.post('/api/usuarios/CargaSaldo', {
       monto: valor,
       email: email, 
     });
