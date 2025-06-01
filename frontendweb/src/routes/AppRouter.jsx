@@ -14,6 +14,7 @@ export default function AppRouter() {
           <Route path="/" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/map" element={<Map />} />
+          <Route path="/saldo" element={<Saldo />} />
           <Route
             path="/home"
             element={

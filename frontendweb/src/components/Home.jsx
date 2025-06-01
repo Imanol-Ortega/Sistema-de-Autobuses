@@ -40,8 +40,9 @@ export default function Home() {
         <h2>¡Bienvenido!</h2>
         <p>Selecciona una opción para continuar.</p>
         <div style={styles.buttons}>
-          <button style={styles.button}>Ver horarios</button>
-          <button style={styles.button}>Buscar ruta</button>
+          <button style={styles.button} onClick={() => navigate('/saldo')}>
+            Mi saldo
+          </button>
           <button style={styles.button} onClick={() => navigate('/map')}>
             Mapa de buses
           </button>
