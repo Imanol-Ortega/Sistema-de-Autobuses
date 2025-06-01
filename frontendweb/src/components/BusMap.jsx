@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import {
   MapContainer,
   TileLayer,
@@ -10,10 +11,8 @@ import {
 } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-
 import busImg from '../assets/icons/bus.png';
 
-// Icono genérico del colectivo
 const busIcon = new L.Icon({
   iconUrl: busImg,
   iconSize: [32, 32],
@@ -24,23 +23,21 @@ export default function BusMap() {
   const navigate = useNavigate();
   const wsRef = useRef();
 
-  const [routes, setRoutes]   = useState([]);   // rutas + paradas que llega en un único mensaje ROUTE
-  const [buses,  setBuses]    = useState({});   // diccionario bus_id → obj posición
+  const { user } = useAuth();
+  const [routes, setRoutes] = useState([]);
+  const [buses, setBuses] = useState({});
+  const [mostrarLista, setMostrarLista] = useState(false);
 
-  // 1️⃣ Conectarse al WebSocket y escuchar
+  // WebSocket
   useEffect(() => {
-    const socket = new WebSocket('ws://localhost:8080/ws'); // ajusta host/puerto
+    const socket = new WebSocket('ws://localhost:8080/ws');
     wsRef.current = socket;
 
     socket.onmessage = (evt) => {
       try {
         const msg = JSON.parse(evt.data);
-        if (msg.type === 'ROUTE') {
-          // Mensaje de definición completa de rutas
-          setRoutes(msg.routes);
-        }
+        if (msg.type === 'ROUTE') setRoutes(msg.routes);
         if (msg.type === 'BUS') {
-          // Mensaje de posición de un colectivo
           setBuses((prev) => ({
             ...prev,
             [msg.bus_id]: {
@@ -58,17 +55,42 @@ export default function BusMap() {
     };
 
     socket.onerror = (err) => console.error('WS error', err);
-    socket.onclose  = ()   => console.log('WS cerrado');
+    socket.onclose = () => console.log('WS cerrado');
 
     return () => socket.close();
   }, []);
 
-  /* helpers ------------------------------------------------------------ */
   const busesArray = Object.values(buses);
+
+  const handlePagar = async (bus) => {
+  try {
+      const response = await fetch('http://localhost:3000/api/usuarios/pagar', {
+      method: 'POST',
+      headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+          user_id: user?.user_id,
+          bus_id: bus.id,
+      }),
+      });
+
+      if (!response.ok) {
+      throw new Error('Error en el pago');
+      }
+
+      const data = await response.json();
+      alert(`✅ Pago exitoso. ID de transacción: ${data.id || 'N/A'}`); //verificar si data.id devuelve el id de la transacción o es necesario acceder a .data nuevamente
+  } catch (error) {
+      console.error(error);
+      alert('❌ Error al procesar el pago');
+  }
+  };
+
 
   return (
     <div style={{ height: '100vh', width: '100vw', position: 'relative' }}>
-      {/* Botón volver */}
       <button
         onClick={() => navigate('/home')}
         style={{
@@ -87,6 +109,79 @@ export default function BusMap() {
         ← Volver
       </button>
 
+      <button
+        onClick={() => setMostrarLista(!mostrarLista)}
+        style={{
+          position: 'absolute',
+          bottom: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 1000,
+          backgroundColor: '#28a745',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '24px',
+          padding: '12px 20px',
+          fontSize: '16px',
+          fontWeight: 'bold',
+          boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+          cursor: 'pointer',
+        }}
+      >
+        {mostrarLista ? 'Ocultar lista de buses' : 'Ver buses'}
+      </button>
+
+      {mostrarLista && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '70px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 999,
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '10px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+            maxHeight: '300px',
+            overflowY: 'auto',
+            width: '90%',
+            maxWidth: '400px',
+          }}
+        >
+          {busesArray.map((bus) => (
+            <div
+              key={bus.id}
+              style={{
+                borderBottom: '1px solid #ccc',
+                padding: '8px 0',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <strong>Bus ID: {bus.id}</strong>
+              <span>Ruta: {bus.route_id}</span>
+              <span>Velocidad: {bus.speed} km/h</span>
+              <button
+                onClick={() => handlePagar(bus)}
+                style={{
+                  marginTop: '6px',
+                  backgroundColor: '#007bff',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '6px 10px',
+                  cursor: 'pointer',
+                  alignSelf: 'flex-start',
+                }}
+              >
+                Pagar
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <MapContainer
         center={[-27.33, -55.86]}
         zoom={13}
@@ -94,7 +189,6 @@ export default function BusMap() {
       >
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-        {/* Rutas */}
         {routes.map((rt) => (
           <Polyline
             key={`route-${rt.id}`}
@@ -104,7 +198,6 @@ export default function BusMap() {
           />
         ))}
 
-        {/* Paradas */}
         {routes.flatMap((rt) =>
           rt.stops.map((st, idx) => (
             <CircleMarker
@@ -118,7 +211,6 @@ export default function BusMap() {
           ))
         )}
 
-        {/* Buses en vivo */}
         {busesArray.map((bus) => (
           <Marker
             key={bus.id}
@@ -133,6 +225,7 @@ export default function BusMap() {
           </Marker>
         ))}
       </MapContainer>
+      
     </div>
   );
 }
