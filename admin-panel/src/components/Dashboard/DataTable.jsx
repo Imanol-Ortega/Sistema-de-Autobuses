@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
 import { Plus, Download, Search, Eye, Edit, Trash2 } from 'lucide-react';
 
-const DataTable = ({ 
-  title, 
-  data = [], 
-  columns, 
-  searchTerm, 
-  onSearchChange, 
-  onAdd, 
-  onEdit, 
-  onDelete, 
-  onView, 
+const DataTable = ({
+  title,
+  data = [],
+  columns,
+  searchTerm,
+  onSearchChange,
+  onAdd,
+  onEdit,
+  onDelete,
+  onView,
   loading = false,
-  searchable = true 
+  searchable = true
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
@@ -22,7 +22,7 @@ const DataTable = ({
   // Filtrar datos según término de búsqueda
   const filteredData = data.filter(item => {
     if (!searchTerm) return true;
-    return Object.values(item).some(value => 
+    return Object.values(item).some(value =>
       value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
     );
   });
@@ -86,7 +86,7 @@ const DataTable = ({
             </button>
           </div>
         </div>
-        
+
         {searchable && (
           <div className="flex items-center space-x-4">
             <div className="flex-1 relative">
@@ -106,14 +106,14 @@ const DataTable = ({
           </div>
         )}
       </div>
-      
+
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
               {columns.map((col, idx) => (
-                <th 
-                  key={idx} 
+                <th
+                  key={idx}
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort(col.key)}
                 >
@@ -127,9 +127,6 @@ const DataTable = ({
                   </div>
                 </th>
               ))}
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Acciones
-              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -146,34 +143,7 @@ const DataTable = ({
                       {col.render ? col.render(row[col.key], row) : (row[col.key] || 'N/A')}
                     </td>
                   ))}
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex items-center justify-end space-x-2">
-                      <button 
-                        className="text-blue-600 hover:text-blue-800 p-1 disabled:opacity-50"
-                        onClick={() => onView && onView(row)}
-                        title="Ver detalles"
-                        disabled={loading}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button 
-                        className="text-green-600 hover:text-green-800 p-1 disabled:opacity-50"
-                        onClick={() => onEdit && onEdit(row)}
-                        title="Editar"
-                        disabled={loading}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button 
-                        className="text-red-600 hover:text-red-800 p-1 disabled:opacity-50"
-                        onClick={() => onDelete && onDelete(row)}
-                        title="Eliminar"
-                        disabled={loading}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
+
                 </tr>
               ))
             ) : (

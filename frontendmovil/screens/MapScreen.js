@@ -1,28 +1,48 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
-import MapView, { Marker, UrlTile } from 'react-native-maps';
-import { getBuses } from '../services/api';
+import MapView, { Marker, Polyline, UrlTile } from 'react-native-maps';
 
 export default function MapScreen() {
-  const [buses, setBuses] = useState([]);
+  const [routes, setRoutes] = useState([]);
+  const [buses, setBuses] = useState({});
   const [loading, setLoading] = useState(true);
+  const wsRef = useRef(null);
 
   useEffect(() => {
-    const fetchBuses = async () => {
+    const socket = new WebSocket('ws://172.20.10.9:8080/ws'); // Cambia por tu IP local
+
+    wsRef.current = socket;
+
+    socket.onmessage = (evt) => {
       try {
-        const data = await getBuses();
-        setBuses(data);
+        const msg = JSON.parse(evt.data);
+        if (msg.type === 'ROUTE') {
+          setRoutes(msg.routes);
+          setLoading(false);
+        } else if (msg.type === 'BUS') {
+          setBuses((prev) => ({
+            ...prev,
+            [msg.bus_id]: {
+              id: msg.bus_id,
+              lat: msg.lat,
+              lon: msg.lon,
+              route_id: msg.route_id,
+              speed: msg.speed,
+            },
+          }));
+        }
       } catch (error) {
-        console.error('Error cargando buses:', error);
-      } finally {
-        setLoading(false);
+        console.error('❌ Error al procesar WS:', error);
       }
     };
-    fetchBuses();
 
-    const interval = setInterval(fetchBuses, 10000);
-    return () => clearInterval(interval);
+    socket.onerror = (err) => console.error('❌ WS Error', err);
+    socket.onclose = () => console.log('🔌 WS cerrado');
+
+    return () => socket.close();
   }, []);
+
+  const busesArray = Object.values(buses);
 
   return (
     <View style={styles.container}>
@@ -32,27 +52,53 @@ export default function MapScreen() {
         <MapView
           style={StyleSheet.absoluteFill}
           initialRegion={{
-            latitude: -27.05,
-            longitude: -56.07,
-            latitudeDelta: 0.1,
-            longitudeDelta: 0.1,
+            latitude: -27.33,
+            longitude: -55.86,
+            latitudeDelta: 0.06,
+            longitudeDelta: 0.06,
           }}
         >
           <UrlTile
-            urlTemplate="http://c.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            urlTemplate="https://c.tile.openstreetmap.org/{z}/{x}/{y}.png"
             maximumZ={19}
-            flipY={false}
           />
-          {buses.map(bus => (
+
+          {/* RUTAS */}
+          {routes.map((route) => (
+            <Polyline
+              key={`route-${route.id}`}
+              coordinates={route.stops.map((stop) => ({
+                latitude: stop.position[0],
+                longitude: stop.position[1],
+              }))}
+              strokeColor={route.color}
+              strokeWidth={4}
+            />
+          ))}
+
+          {/* PARADAS */}
+          {routes.flatMap((route) =>
+            route.stops.map((stop, idx) => (
+              <Marker
+                key={`stop-${route.id}-${idx}`}
+                coordinate={{
+                  latitude: stop.position[0],
+                  longitude: stop.position[1],
+                }}
+                title={stop.name || `Parada ${idx + 1}`}
+                pinColor="black"
+              />
+            ))
+          )}
+
+          {/* BUSES */}
+          {busesArray.map((bus) => (
             <Marker
               key={bus.id}
-              coordinate={{
-                latitude: bus.position[0],
-                longitude: bus.position[1],
-              }}
-              title={`Bus ${bus.plate}`}
-              description={`${bus.route_name} - Pasajeros: ${bus.passengers}`}
-              pinColor={bus.route_color}
+              coordinate={{ latitude: bus.lat, longitude: bus.lon }}
+              title={`🚌 ${bus.id}`}
+              description={`Ruta: ${bus.route_id} | Vel: ${bus.speed} km/h`}
+              pinColor="blue"
             />
           ))}
         </MapView>
@@ -64,7 +110,5 @@ export default function MapScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 });
