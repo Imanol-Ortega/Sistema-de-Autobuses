@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import dataService from '../services/dataService';
+import dataService, { busesAPI } from '../services/api';
 
 // Hook genérico para operaciones CRUD con Cassandra
-const useApiResource = (resourceService, options = {}) => {
+const useApiResource = async (resourceService, options = {}) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -26,15 +26,12 @@ const useApiResource = (resourceService, options = {}) => {
   }, []);
 
   // Función para reintentar operaciones
-  const withRetry = useCallback(async (operation, attempts = retryAttempts) => {
-    for (let i = 0; i < attempts; i++) {
+  const withRetry = useCallback(async (operation) => {
       try {
         return await operation();
       } catch (error) {
-        if (i === attempts - 1) throw error;
-        await new Promise(resolve => setTimeout(resolve, retryDelay * (i + 1)));
+       console.log(error)
       }
-    }
   }, [retryAttempts, retryDelay]);
 
   // Fetch inicial de datos
@@ -44,9 +41,9 @@ const useApiResource = (resourceService, options = {}) => {
     
     try {
       cancelPendingRequests();
-      
-      const result = await withRetry(() => resourceService.getAll());
-      
+      console.log("Fetching data from resourceService: ", resourceService);
+      const result = await resourceService.getAll();
+      console.log("result: ", result);
       if (result.success) {
         setData(result.data || []);
       } else {
@@ -59,6 +56,7 @@ const useApiResource = (resourceService, options = {}) => {
         setError(errorInfo);
         console.error('Fetch error:', err);
       }
+      console.log("esta raro el error: ",err);
     } finally {
       setLoading(false);
       setInitialized(true);
@@ -188,12 +186,13 @@ const useApiResource = (resourceService, options = {}) => {
 };
 
 // Hook específico para Buses
-export const useBuses = (options = {}) => {
-  return useApiResource(dataService.bus, {
-    refreshInterval: 30000, // Refresh cada 30 segundos
+export const useBuses =async (options = {}) => {
+  return useApiResource(busesAPI, {
+    refreshInterval: 30000, 
     ...options
   });
 };
+
 
 // Hook específico para Conductores
 export const useConductores = (options = {}) => {
