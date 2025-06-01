@@ -1,0 +1,24 @@
+{
+  "routes": [
+    {
+      "id": 1,
+      "name": "Línea 1 - Roja",
+      "color": "#FF0000"
+    },
+    {
+      "id": 2,
+      "name": "Línea 2 - Azul",
+      "color": "#0000FF"
+    },
+    {
+      "id": 3,
+      "name": "Línea 3 - Verde",
+      "color": "#00FF00"
+    },
+    {
+      "id": 4,
+      "name": "Línea 4 - Lila",
+      "color": "#800080"
+    }
+  ]
+}

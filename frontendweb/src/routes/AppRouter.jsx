@@ -8,7 +8,7 @@ import { AuthProvider } from '../context/AuthContext';
 
 export default function AppRouter() {
   return (
-    <>
+    <AuthProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Login />} />
@@ -18,13 +18,13 @@ export default function AppRouter() {
           <Route
             path="/home"
             element={
-              // <PrivateRoute>
+              <PrivateRoute>
                 <Home />
-              // </PrivateRoute>
+              </PrivateRoute>
             }
           />
         </Routes>
       </BrowserRouter>
-    </>
+    </AuthProvider >
   );
 }
