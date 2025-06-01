@@ -60,31 +60,34 @@ export const cargaSaldo = async (req: Request, res: Response): Promise<any> => {
     successResponse({ response }, res);
 
   } catch (error) {
-    console.error("Error creating user:", error);
+    console.error("Error updating user:", error);
     res.status(400).json({
-      error: "Error creating user",
+      error: "Error updating user",
     });
   }
 }
 
 export const restaSaldo = async (req: Request, res: Response): Promise<any> => {
-
+  console.log("Entra funcion restaSaldo en api");
   try {
-    const { monto, email } = req.body;
-    if (!monto || !email) {
-      return res.status(400).json({ error: "Email and monto are required" });
+    console.log("ingresa primer try de funcion restaSaldo en api");
+    const { monto, user_id } = req.body;
+    if (!monto || !user_id) {
+      return res.status(400).json({ error: "user_id and monto are required" });
     }
 
-    const response = await userService.restaSaldos(monto, email);
-    return successResponse({ response }, res);
+    const response = await userService.restaSaldos(monto, user_id);
+    console.log("funcion restaSaldo en api. response: ",response);
+    successResponse({ response }, res);
 
   } catch (error) {
-    console.error("Error creating user:", error);
+    console.error("Error updating saldo:", error);
     res.status(400).json({
-      error: "Error creating user",
+      error: "Error updating user",
     });
   }
 }
+
 export const deleteUser = async (req: Request, res: Response) => {
   const { id } = req.params;
   successResponse({ response: "ok" }, res);
