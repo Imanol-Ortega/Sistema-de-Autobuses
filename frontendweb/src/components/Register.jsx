@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../service/axios';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -46,21 +47,17 @@ export default function Register() {
 
     try {
       setLoading(true);
-      const response = await fetch('/api/usuarios/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre, email, password }),
+      const response = await api.post('usuarios/create', {
+        nombre, email, password
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
+      if (!response.response) {
         throw new Error(data.error || 'Error al crear el usuario');
       }
 
       // Guarda el token y el usuario
-      localStorage.setItem('token', data.response.token);
-      localStorage.setItem('user', JSON.stringify(data.response.user));
+      localStorage.setItem('token', response.response.token);
+      localStorage.setItem('user', JSON.stringify(response.response.user));
 
       navigate('/home'); // Redirige después del registro
     } catch (err) {
@@ -68,10 +65,10 @@ export default function Register() {
     } finally {
       setLoading(false);
     }
-    
+
   };
-  
-  
+
+
 
   return (
     <div style={styles.page}>

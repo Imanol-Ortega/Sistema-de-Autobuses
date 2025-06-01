@@ -23,13 +23,8 @@ api.interceptors.request.use(
 // ========== BUSES API ==========
 export const busesAPI = {
   getAll: async() => {
-    try {
     const response = await api.get('/buses/get')
-    console.log("los pueblos ",response);
     return response;
-    } catch (error) {
-     console.log("NO me gustas",error); 
-    }
   },
   
   getById: (id) => ()=>{},

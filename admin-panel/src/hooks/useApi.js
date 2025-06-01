@@ -41,11 +41,9 @@ const useApiResource = async (resourceService, options = {}) => {
     
     try {
       cancelPendingRequests();
-      console.log("Fetching data from resourceService: ", resourceService);
       const result = await resourceService.getAll();
-      console.log("result: ", result);
-      if (result.success) {
-        setData(result.data || []);
+      if (result.data.response) {
+        setData(result.data.response || []);
       } else {
         setError(result.error);
         console.error('Error fetching data:', result.error);

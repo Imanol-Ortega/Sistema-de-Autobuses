@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../service/axios';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -38,28 +39,22 @@ export default function Login() {
 
     try {
       setLoading(true);
-      const response = await fetch('/api/usuarios/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+      console.log('Iniciando sesión con:', { email, password });
+      const response = await api.post('usuarios/login', {
+        email, password,
       });
+      console.log('Respuesta del servidor:', response.data);
 
-      const text = await response.text();
-      let data;
-      try {
-        data = text ? JSON.parse(text) : {};
-      } catch {
-        data = {};
-      }
 
-      if (!response.ok) {
+      if (!response.data.response) {
         throw new Error(data.error || 'Error al iniciar sesión');
       }
 
-      login(data.response.token);
+      login(response.data.response.token, response.data.response.user);
 
       navigate('/home');
     } catch (err) {
+      console.error('Error al iniciar sesión:', err);
       setErrors({ ...newErrors, general: err.message });
     } finally {
       setLoading(false);
