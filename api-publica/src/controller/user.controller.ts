@@ -47,7 +47,7 @@ export const Login = async (req: Request, res: Response): Promise<any> => {
 
 export const cargaSaldo = async (req: Request, res: Response): Promise<any> => {
   console.log("Entra funcion cargaSaldo en api");
-//llamado al api
+  //llamado al api
   try {
     console.log("ingresa primer try de funcion cargaSaldo en api");
     const { monto, user_id } = req.body;
@@ -56,7 +56,7 @@ export const cargaSaldo = async (req: Request, res: Response): Promise<any> => {
     }
 
     const response = await userService.CargaSaldos(monto, user_id);
-    console.log("funcion cargaSaldo en api. response: ",response);
+    console.log("funcion cargaSaldo en api. response: ", response);
     successResponse({ response }, res);
 
   } catch (error) {
