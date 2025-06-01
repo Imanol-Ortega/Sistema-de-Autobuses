@@ -11,7 +11,7 @@ import {
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-import busImg from '../assets/icons/movil.png';
+import busImg from '../assets/icons/bus.png';
 
 // Icono genérico del colectivo
 const busIcon = new L.Icon({
