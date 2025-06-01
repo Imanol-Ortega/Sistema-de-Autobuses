@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { 
-  Users, 
-  Bus, 
-  UserCheck, 
-  MapPin, 
-  Activity, 
-  TrendingUp, 
+import {
+  Users,
+  Bus,
+  UserCheck,
+  MapPin,
+  Activity,
+  TrendingUp,
   Clock,
   AlertTriangle,
   CheckCircle,
@@ -18,6 +18,7 @@ import {
 // Importar componentes
 import StatsCard from './StatsCard';
 import DataTable from './DataTable';
+import MapView from './MapView';
 import BusForm from '../Forms/BusForm';
 import ConductorForm from '../Forms/ConductorForm';
 import UsuarioForm from '../Forms/UsuarioForm';
@@ -27,12 +28,12 @@ import { useBuses, useConductores, useUsuarios, useEstadisticas } from '../../ho
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
-  
+
   // Estados para formularios modales
   const [busFormOpen, setBusFormOpen] = useState(false);
   const [conductorFormOpen, setConductorFormOpen] = useState(false);
   const [usuarioFormOpen, setUsuarioFormOpen] = useState(false);
-  
+
   const [selectedBus, setSelectedBus] = useState(null);
   const [selectedConductor, setSelectedConductor] = useState(null);
   const [selectedUsuario, setSelectedUsuario] = useState(null);
@@ -41,47 +42,47 @@ const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Hooks para datos de la API
-  const { 
-    buses, 
-    loading: busesLoading, 
-    error: busesError, 
+  const {
+    buses,
+    loading: busesLoading,
+    error: busesError,
     refetch: refetchBuses,
     create: createBus,
     update: updateBus,
     remove: removeBus
   } = useBuses();
 
-  const { 
-    conductores, 
-    loading: conductoresLoading, 
-    error: conductoresError, 
+  const {
+    conductores,
+    loading: conductoresLoading,
+    error: conductoresError,
     refetch: refetchConductores,
     create: createConductor,
     update: updateConductor,
     remove: removeConductor
   } = useConductores();
 
-  const { 
-    usuarios, 
-    loading: usuariosLoading, 
-    error: usuariosError, 
+  const {
+    usuarios,
+    loading: usuariosLoading,
+    error: usuariosError,
     refetch: refetchUsuarios,
     create: createUsuario,
     update: updateUsuario,
     remove: removeUsuario
   } = useUsuarios();
 
-  const { 
-    stats, 
-    loading: statsLoading, 
-    error: statsError, 
-    refetch: refetchStats 
+  const {
+    stats,
+    loading: statsLoading,
+    error: statsError,
+    refetch: refetchStats
   } = useEstadisticas();
 
   // Componente para mostrar errores
   const ErrorMessage = ({ error, onRetry }) => {
     if (!error) return null;
-    
+
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
         <div className="flex items-center">
@@ -91,7 +92,7 @@ const AdminDashboard = () => {
             <p className="text-sm text-red-700 mt-1">{error.message}</p>
           </div>
           {onRetry && (
-            <button 
+            <button
               onClick={onRetry}
               className="text-red-600 hover:text-red-800 text-sm font-medium"
             >
@@ -113,7 +114,7 @@ const AdminDashboard = () => {
     };
     const config = estados[estado] || estados.inactivo;
     const Icon = config.icon;
-    
+
     return (
       <span className={config.className}>
         <Icon className="w-3 h-3 mr-1" />
@@ -136,12 +137,14 @@ const AdminDashboard = () => {
     { key: 'route_name', header: 'Ruta' },
     { key: 'capacity', header: 'Capacidad' },
     { key: 'status', header: 'Estado', render: (status) => renderEstadoBus(status) },
-    { key: 'route_color', header: 'Color', render: (color) => (
-      <div className="flex items-center">
-        <div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: color }}></div>
-        {color}
-      </div>
-    )}
+    {
+      key: 'route_color', header: 'Color', render: (color) => (
+        <div className="flex items-center">
+          <div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: color }}></div>
+          {color}
+        </div>
+      )
+    }
   ];
 
   // COLUMNAS ADAPTADAS: Solo campos que existen en tu esquema Cassandra
@@ -194,7 +197,7 @@ const AdminDashboard = () => {
     const itemName = item.nombre || item.bus_id || item.route_name;
     if (window.confirm(`¿Estás seguro de eliminar este ${type}: ${itemName}?`)) {
       let result;
-      
+
       if (type === 'bus') {
         result = await removeBus(item.bus_id);
       } else if (type === 'conductor') {
@@ -225,7 +228,7 @@ const AdminDashboard = () => {
 
   const handleSaveBus = async (busData) => {
     let result;
-    
+
     if (selectedBus) {
       result = await updateBus(selectedBus.bus_id, busData);
     } else {
@@ -245,7 +248,7 @@ const AdminDashboard = () => {
 
   const handleSaveConductor = async (conductorData) => {
     let result;
-    
+
     if (selectedConductor) {
       result = await updateConductor(selectedConductor.driver_id, conductorData);
     } else {
@@ -264,7 +267,7 @@ const AdminDashboard = () => {
 
   const handleSaveUsuario = async (usuarioData) => {
     let result;
-    
+
     if (selectedUsuario) {
       result = await updateUsuario(selectedUsuario.user_id, usuarioData);
     } else {
@@ -294,36 +297,36 @@ const AdminDashboard = () => {
         return (
           <div>
             <ErrorMessage error={statsError} onRetry={refetchStats} />
-            
+
             {/* Estadísticas principales */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-              <StatsCard 
-                title="Total Buses" 
-                value={stats.totalBuses} 
+              <StatsCard
+                title="Total Buses"
+                value={stats.totalBuses}
                 subtitle={`${stats.busesActivos} activos`}
                 icon={Bus}
                 color="blue"
                 loading={statsLoading}
               />
-              <StatsCard 
-                title="Choferes" 
-                value={stats.totalConductores} 
+              <StatsCard
+                title="Choferes"
+                value={stats.totalConductores}
                 subtitle="Registrados"
                 icon={UserCheck}
                 color="green"
                 loading={statsLoading}
               />
-              <StatsCard 
-                title="Usuarios" 
-                value={stats.totalUsuarios} 
+              <StatsCard
+                title="Usuarios"
+                value={stats.totalUsuarios}
                 subtitle="Con cuenta"
                 icon={Users}
                 color="purple"
                 loading={statsLoading}
               />
-              <StatsCard 
-                title="Viajes Hoy" 
-                value={stats.viajesHoy} 
+              <StatsCard
+                title="Viajes Hoy"
+                value={stats.viajesHoy}
                 subtitle="En progreso"
                 icon={Activity}
                 color="orange"
@@ -332,22 +335,14 @@ const AdminDashboard = () => {
             </div>
 
             {/* Estadísticas adicionales */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <StatsCard 
-                title="Recaudación Hoy" 
-                value={stats.recaudacionHoy} 
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mb-6">
+              <StatsCard
+                title="Recaudación Hoy"
+                value={stats.recaudacionHoy}
                 subtitle="Ingresos del día"
                 icon={TrendingUp}
                 color="green"
                 prefix="Gs. "
-                loading={statsLoading}
-              />
-              <StatsCard 
-                title="Promedio Pasajeros" 
-                value={stats.promedioPasajeros} 
-                subtitle="Por viaje"
-                icon={Users}
-                color="blue"
                 loading={statsLoading}
               />
             </div>
@@ -355,9 +350,9 @@ const AdminDashboard = () => {
             {/* Resumen de buses activos */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Buses Activos en Tiempo Real</h3>
-              
+
               <ErrorMessage error={busesError} onRetry={refetchBuses} />
-              
+
               {busesLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -401,9 +396,9 @@ const AdminDashboard = () => {
         return (
           <div>
             <ErrorMessage error={busesError} onRetry={refetchBuses} />
-            <DataTable 
-              title="Gestión de Buses" 
-              data={buses || []} 
+            <DataTable
+              title="Gestión de Buses"
+              data={buses || []}
               columns={busColumns}
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
@@ -420,9 +415,9 @@ const AdminDashboard = () => {
         return (
           <div>
             <ErrorMessage error={conductoresError} onRetry={refetchConductores} />
-            <DataTable 
-              title="Gestión de Choferes" 
-              data={conductores || []} 
+            <DataTable
+              title="Gestión de Choferes"
+              data={conductores || []}
               columns={conductorColumns}
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
@@ -439,9 +434,9 @@ const AdminDashboard = () => {
         return (
           <div>
             <ErrorMessage error={usuariosError} onRetry={refetchUsuarios} />
-            <DataTable 
-              title="Gestión de Usuarios" 
-              data={usuarios || []} 
+            <DataTable
+              title="Gestión de Usuarios"
+              data={usuarios || []}
               columns={usuarioColumns}
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
@@ -455,33 +450,7 @@ const AdminDashboard = () => {
         );
 
       case 'mapa':
-        return (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Mapa en Tiempo Real</h3>
-              <div className="flex items-center space-x-2">
-                <button className="btn-secondary">
-                  <Settings className="w-4 h-4 mr-1" />
-                  Configurar
-                </button>
-                <button className="btn-primary" onClick={handleRefreshAll}>
-                  <RefreshCw className="w-4 h-4 mr-1" />
-                  Actualizar
-                </button>
-              </div>
-            </div>
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg h-96 flex items-center justify-center flex-col border-2 border-dashed border-blue-200">
-              <MapPin className="w-16 h-16 text-blue-400 mb-4" />
-              <p className="text-xl text-blue-600 mb-2 font-semibold">Mapa Interactivo</p>
-              <p className="text-sm text-blue-500 mb-4">Listo para integración con API de ubicaciones</p>
-              <div className="flex space-x-2">
-                <span className="px-3 py-1 bg-blue-200 text-blue-800 rounded-full text-xs">GPS en tiempo real</span>
-                <span className="px-3 py-1 bg-green-200 text-green-800 rounded-full text-xs">Rutas dinámicas</span>
-                <span className="px-3 py-1 bg-purple-200 text-purple-800 rounded-full text-xs">Paradas activas</span>
-              </div>
-            </div>
-          </div>
-        );
+        return <MapView />;
 
       default:
         return null;
@@ -514,7 +483,7 @@ const AdminDashboard = () => {
                 <Clock className="w-4 h-4" />
                 <span>{new Date().toLocaleString('es-PY')}</span>
               </div>
-              <button 
+              <button
                 className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                 onClick={handleRefreshAll}
                 title="Actualizar todos los datos"
@@ -536,11 +505,10 @@ const AdminDashboard = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
-                    activeTab === tab.id
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
+                  className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${activeTab === tab.id
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
                 >
                   <Icon className="w-4 h-4 mr-2" />
                   {tab.label}

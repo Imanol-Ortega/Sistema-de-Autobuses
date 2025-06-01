@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Configuración base de la API para Cassandra en Docker
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://192.168.228.72:3000/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -9,87 +9,32 @@ const api = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
-  timeout: 15000, // 15 segundos para Cassandra
+  timeout: 15000, 
 });
 
-// Interceptor para requests (agregar token si es necesario)
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    
-    // Log para debugging en desarrollo
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, {
-        data: config.data,
-        params: config.params
-      });
-    }
-    
+    // Aquí puedes agregar lógica antes de enviar la solicitud
+    console.log('Enviando solicitud a:', config.baseURL,config.url);
     return config;
-  },
-  (error) => {
-    console.error('[API Request Error]', error);
-    return Promise.reject(error);
   }
-);
-
-// Interceptor para responses (manejo de errores globales y formato Cassandra)
-api.interceptors.response.use(
-  (response) => {
-    // Log para debugging en desarrollo
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[API Response] ${response.config.method?.toUpperCase()} ${response.config.url}`, {
-        status: response.status,
-        data: response.data
-      });
-    }
-    
-    // Cassandra puede devolver diferentes formatos, normalizar si es necesario
-    if (response.data && typeof response.data === 'object') {
-      // Si viene encapsulado en un objeto con data/rows, extraer
-      if (response.data.rows && Array.isArray(response.data.rows)) {
-        response.data = response.data.rows;
-      }
-      // Si viene con metadata de Cassandra, mantener solo los datos
-      if (response.data.result && Array.isArray(response.data.result)) {
-        response.data = response.data.result;
-      }
-    }
-    
-    return response;
-  },
-  (error) => {
-    console.error('[API Response Error]', error);
-    
-    if (error.response?.status === 401) {
-      // Token expirado o no válido
-      localStorage.removeItem('authToken');
-      window.location.href = '/login';
-    }
-    
-    // Manejar errores específicos de Cassandra
-    if (error.response?.status === 503) {
-      console.error('Cassandra service unavailable');
-    }
-    
-    return Promise.reject(error);
-  }
-);
+)
 
 // ========== BUSES API ==========
 export const busesAPI = {
-  // Obtener todos los buses
-  getAll: () => api.get('/buses'),
+  getAll: async() => {
+    try {
+    const response = await api.get('/buses/get')
+    console.log("los pueblos ",response);
+    return response;
+    } catch (error) {
+     console.log("NO me gustas",error); 
+    }
+  },
   
-  // Obtener bus por ID (UUID en Cassandra)
-  getById: (id) => api.get(`/buses/${id}`),
+  getById: (id) => ()=>{},
   
-  // Crear nuevo bus
   create: (busData) => {
-    // Asegurar que los campos requeridos estén presentes
     const payload = {
       bus_id: busData.bus_id || `bus_${Date.now()}`,
       plate: busData.plate,
@@ -102,7 +47,8 @@ export const busesAPI = {
       created_at: busData.created_at || new Date().toISOString(),
       last_maintenance: busData.last_maintenance || new Date().toISOString()
     };
-    return api.post('/buses', payload);
+    // return api.post('/buses', payload);
+    return ()=>{}
   },
   
   // Actualizar bus
@@ -112,17 +58,21 @@ export const busesAPI = {
       capacity: parseInt(busData.capacity) || 40,
       updated_at: new Date().toISOString()
     };
-    return api.put(`/buses/${id}`, payload);
+    // return api.put(`/buses/${id}`, payload);
+    return ()=>{}
   },
   
   // Eliminar bus (soft delete recomendado para Cassandra)
-  delete: (id) => api.delete(`/buses/${id}`),
+  // delete: (id) => api.delete(`/buses/${id}`),
+  delete: (id)=>{},
   
   // Obtener buses por estado
-  getByStatus: (status) => api.get(`/buses`, { params: { status } }),
-  
+  // getByStatus: (status) => api.get(`/buses`, { params: { status } }),
+  getByStatus: (status) => {},
+
   // Obtener buses activos
-  getActive: () => api.get('/buses', { params: { status: 'activo' } }),
+  // getActive: () => api.get('/buses', { params: { status: 'activo' } }),
+  getActive: () => {},
 };
 
 // ========== CONDUCTORES API ==========
