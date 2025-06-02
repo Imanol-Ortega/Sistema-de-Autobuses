@@ -8,47 +8,47 @@ services:
     volumes:
       - cassandra_data:/var/lib/cassandra
       - ./init-scripts/cassandra:/docker-entrypoint-initdb.d
-    environment:
-      - CASSANDRA_CLUSTER_NAME=transit-cluster
-      - CASSANDRA_SEEDS=cassandra
-      - CASSANDRA_LISTEN_ADDRESS=auto
-      - CASSANDRA_BROADCAST_ADDRESS=cassandra
-      - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
+   # environment:
+   #   - CASSANDRA_CLUSTER_NAME=transit-cluster
+   #   - CASSANDRA_SEEDS=cassandra
+   #   - CASSANDRA_LISTEN_ADDRESS=auto
+   #   - CASSANDRA_BROADCAST_ADDRESS=cassandra
+   #   - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
     healthcheck:
       test: ["CMD-SHELL", "cqlsh -e 'describe keyspaces'"]
       interval: 60s
       timeout: 50s
       retries: 20
 
-  cassandra2:
-    image: cassandra:4.0
-    container_name: cassandra2
-    restart: unless-stopped
-    ports:
-      - "9043:9042"
-    volumes:
-      - cassandra2_data:/var/lib/cassandra
-    environment:
-      - CASSANDRA_CLUSTER_NAME=transit-cluster
-      - CASSANDRA_SEEDS=cassandra
-      - CASSANDRA_LISTEN_ADDRESS=auto
-      - CASSANDRA_BROADCAST_ADDRESS=cassandra2
-      - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
-    depends_on:
-      - cassandra
-    healthcheck:
-      test: ["CMD-SHELL", "cqlsh -e 'describe keyspaces'"]
-      interval: 80s
-      timeout: 50s
-      retries: 20
+ # cassandra2:
+ #   image: cassandra:4.0
+ #   container_name: cassandra2
+ #   restart: unless-stopped
+ #   ports:
+ #     - "9043:9042"
+ #   volumes:
+ #     - cassandra2_data:/var/lib/cassandra
+ #   environment:
+ #     - CASSANDRA_CLUSTER_NAME=transit-cluster
+ #     - CASSANDRA_SEEDS=cassandra
+ #     - CASSANDRA_LISTEN_ADDRESS=auto
+ #     - CASSANDRA_BROADCAST_ADDRESS=cassandra2
+ #     - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
+ #   depends_on:
+ #     - cassandra
+ #   healthcheck:
+ #     test: ["CMD-SHELL", "cqlsh -e 'describe keyspaces'"]
+ #     interval: 80s
+ #     timeout: 50s
+ #     retries: 20
 
   init:
     image: cassandra:4.0
     depends_on:
       cassandra:
         condition: service_healthy
-      cassandra2:
-        condition: service_healthy
+   #   cassandra2:
+   #     condition: service_healthy
     entrypoint: >
       bash -c "
         echo 'Aplicando esquema CQL...';
@@ -64,8 +64,8 @@ services:
     depends_on:
       cassandra:
         condition: service_healthy
-      cassandra2:
-        condition: service_healthy
+     # cassandra2:
+     #   condition: service_healthy
       init:
         condition: service_started
     volumes:
@@ -87,8 +87,8 @@ services:
     depends_on:
       cassandra:
         condition: service_healthy
-      cassandra2:
-        condition: service_healthy
+   #   cassandra2:
+   #     condition: service_healthy
       cassandra-seed:
         condition: service_started
     environment:
@@ -109,11 +109,6 @@ services:
       - "29092:29092"
     volumes:
       - kafka1_data:/var/lib/kafka/data
-      # Monta el archivo en la ruta del template para que sea usado por el proceso de sustitución
-    #  - ./log4j.properties:/etc/confluent/docker/log4j.properties.template:ro
-    # Agrega un tmpfs en /etc/kafka para que el target pueda ser escrito
-   # tmpfs:
-  #    - /etc/kafka
     healthcheck:
       test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server kafka:9092"]
       interval: 30s
@@ -122,7 +117,7 @@ services:
     entrypoint: >
       sh -c "
         echo 'Esperando 60s para asegurar que Cassandra y Seed estén completamente listos...';
-        sleep 60;
+        sleep 15;
         exec /etc/confluent/docker/run
       "
 
@@ -133,8 +128,8 @@ services:
     depends_on:
       cassandra:
         condition: service_healthy
-      cassandra2:
-        condition: service_healthy
+    #  cassandra2:
+    #    condition: service_healthy
       cassandra-seed:
         condition: service_started
     environment:
@@ -155,11 +150,6 @@ services:
       - "29093:29093"
     volumes:
       - kafka2_data:/var/lib/kafka/data
-      # Monta el archivo en la ruta del template para que sea usado por el proceso de sustitución
-    #  - ./log4j.properties:/etc/confluent/docker/log4j.properties.template:ro
-    # Agrega un tmpfs en /etc/kafka para que el target pueda ser escrito
-   # tmpfs:
-    #  - /etc/kafka
     healthcheck:
       test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server kafka2:9092"]
       interval: 30s
@@ -168,7 +158,7 @@ services:
     entrypoint: >
       sh -c "
         echo 'Esperando 60s para asegurar que Cassandra y Seed estén completamente listos...';
-        sleep 60;
+        sleep 15;
         exec /etc/confluent/docker/run
       "
 
@@ -179,8 +169,8 @@ services:
     depends_on:
       cassandra:
         condition: service_healthy
-      cassandra2:
-        condition: service_healthy
+    #  cassandra2:
+    #    condition: service_healthy
       cassandra-seed:
         condition: service_started
     environment:
@@ -201,11 +191,6 @@ services:
       - "29094:29094"
     volumes:
       - kafka3_data:/var/lib/kafka/data
-      # Monta el archivo en la ruta del template para que sea usado por el proceso de sustitución
-      #- ./log4j.properties:/etc/confluent/docker/log4j.properties.template:ro
-    # Agrega un tmpfs en /etc/kafka para que el target pueda ser escrito
-   # tmpfs:
-    #  - /etc/kafka
     healthcheck:
       test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server kafka3:9092"]
       interval: 30s
@@ -214,7 +199,7 @@ services:
     entrypoint: >
       sh -c "
         echo 'Esperando 60s para asegurar que Cassandra y Seed estén completamente listos...';
-        sleep 60;
+        sleep 15;
         exec /etc/confluent/docker/run
       "
 
@@ -226,16 +211,12 @@ services:
       - kafka2
       - kafka3
     entrypoint: >
-      sh -c "
-        echo 'Esperando 150s después de Kafka para crear los topics...';
-        sleep 150;
-        echo 'Creando topics… (☞ﾟヮﾟ)☞';
-        for topic in choferes usuarios paradas buses historial_pagos horarios viajes; do
-          kafka-topics --bootstrap-server kafka:9092 --create --topic $topic --partitions 3 --replication-factor 3 || echo 'El topic $topic ya existe o falló (┬┬﹏┬┬)';
-        done;
-        echo 'Topics creados';
-      "
+      sh -c "echo 'Esperando 150s después de Kafka para crear los topics...'; sleep 10; echo 'Creando topics… (☞ﾟヮﾟ)☞'; for topic in choferes usuarios paradas buses historial_pagos horarios viajes; do kafka-topics --bootstrap-server kafka:9092 --create --topic $$topic --partitions 3 --replication-factor 3 || echo 'El topic $$topic ya existe o falló (┬┬﹏┬┬)'; done; echo 'Topics creados'"
     restart: "no"
+
+
+
+
 
   ingestor1:
     build:
@@ -251,13 +232,14 @@ services:
     environment:
       - KAFKA_BROKERS=kafka1:9092,kafka2:9092,kafka3:9092
       - CASSANDRA_CONTACT_POINTS=cassandra
-      - CASSANDRA_LOCAL_DC=dc1
+     # - CASSANDRA_LOCAL_DC=dc1
+      - CASSANDRA_LOCAL_DC=datacenter1
       - CASSANDRA_USERNAME=cassandra
       - CASSANDRA_PASSWORD=cassandra
       - CASSANDRA_KEYSPACE=transit
       - TOPICS=choferes,usuarios,paradas,buses,historial_pagos,horarios,viajes
     working_dir: /app
-    entrypoint: ["sh", "-c", "echo 'Arrancando ingestor1…'; sleep 200; exec node black_magic.js"]
+    entrypoint: ["sh", "-c", "echo 'Arrancando ingestor1…'; sleep 30; exec node black_magic.js"]
     restart: unless-stopped
 
   ingestor2:
@@ -274,13 +256,14 @@ services:
     environment:
       - KAFKA_BROKERS=kafka1:9092,kafka2:9092,kafka3:9092
       - CASSANDRA_CONTACT_POINTS=cassandra
-      - CASSANDRA_LOCAL_DC=dc1
+      #- CASSANDRA_LOCAL_DC=dc1
+      - CASSANDRA_LOCAL_DC=datacenter1
       - CASSANDRA_USERNAME=cassandra
       - CASSANDRA_PASSWORD=cassandra
       - CASSANDRA_KEYSPACE=transit
       - TOPICS=choferes,usuarios,paradas,buses,historial_pagos,horarios,viajes
     working_dir: /app
-    entrypoint: ["sh", "-c", "echo 'Arrancando ingestor2…'; sleep 200; exec node black_magic.js"]
+    entrypoint: ["sh", "-c", "echo 'Arrancando ingestor2…'; sleep 30; exec node black_magic.js"]
     restart: unless-stopped
 
 volumes:

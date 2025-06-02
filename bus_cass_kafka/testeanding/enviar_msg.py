@@ -85,14 +85,13 @@ def produce_historial_recorrido_real():
 
 def produce_viajes():
     return {
-        "bus_id": fake.bothify(text="BUS-###"),
-        "user_id": str(uuid.uuid4()),
-        "ts": current_timestamp_ms(),
         "viaje_id": str(uuid.uuid1()),
-        "parada_ini": str(uuid.uuid4()),
-        "parada_fin": str(uuid.uuid4()),
-        "cobro": round(random.uniform(1.0, 100.0), 2)
+        "horario_id": fake.bothify(text="HORA-###"),
+        "cant_pasaj": str(random.randint(1, 50)),
+        "fecha_hora": current_timestamp_ms(),  
+        "estado": random.choice(["iniciando", "en progreso", "finalizado"])
     }
+
 
 topic_generators = {
     "choferes": produce_choferes,
