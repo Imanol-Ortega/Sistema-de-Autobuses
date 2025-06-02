@@ -78,15 +78,31 @@ const cargarSaldo = async (monto, email) => {
   }
 };
 
+// export const pagarPasaje = async (userId, busId) => {
+//   try {
+//     const response = await Api.post('/api/usuarios/restaSaldo', {
+//       user_id: userId,
+//       monto: monto,
+//     });
+//     return response.data;
+//   } catch (error) {
+//     console.error('Error al pagar pasaje:', error);
+//     throw error;
+//   }
+// };
 export const pagarPasaje = async (userId, busId) => {
   try {
-    const response = await Api.post('/api/usuarios/restaSaldo', {
+    console.log("trae del front",userId,busId);
+    const response = await Api.post('/api/usuarios/pagar', {
       user_id: userId,
-      monto: monto,
+      bus_id: busId
+      // monto: 5000 // Si decides permitir que el cliente lo envíe
     });
+    console.log("response pagar",response);
     return response.data;
   } catch (error) {
-    console.error('Error al pagar pasaje:', error);
+    console.error('Error al pagar pasaje:', error.response?.data || error.message);
     throw error;
   }
 };
+
