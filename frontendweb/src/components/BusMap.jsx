@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../service/axios';
 import {
   MapContainer,
   TileLayer,
@@ -23,14 +24,16 @@ export default function BusMap() {
   const navigate = useNavigate();
   const wsRef = useRef();
 
-  const { user } = useAuth();
+  // const { user } = useAuth();  
+  const { user: rawUser } = useAuth();
+  const user = typeof rawUser === 'string' ? JSON.parse(rawUser) : rawUser;
   const [routes, setRoutes] = useState([]);
   const [buses, setBuses] = useState({});
   const [mostrarLista, setMostrarLista] = useState(false);
 
   // WebSocket
   useEffect(() => {
-    const socket = new WebSocket('ws://localhost:8080/ws');
+    const socket = new WebSocket('ws://192.168.1.100:8080/ws');
     wsRef.current = socket;
 
     socket.onmessage = (evt) => {
@@ -63,29 +66,20 @@ export default function BusMap() {
   const busesArray = Object.values(buses);
 
   const handlePagar = async (bus) => {
-  try {
-      const response = await fetch('http://localhost:3000/api/usuarios/pagar', {
-      method: 'POST',
-      headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-          user_id: user?.user_id,
-          bus_id: bus.id,
-      }),
+    console.log("Ingreas handle");
+    try {
+      console.log("user.user_id: ",user.user_id);
+      const response = await api.post('/usuarios/pagar', {
+        bus_id: bus.id,
+        user_id: user.user_id,
       });
-
-      if (!response.ok) {
-      throw new Error('Error en el pago');
-      }
-
-      const data = await response.json();
-      alert(`✅ Pago exitoso. ID de transacción: ${data.id || 'N/A'}`); //verificar si data.id devuelve el id de la transacción o es necesario acceder a .data nuevamente
-  } catch (error) {
-      console.error(error);
-      alert('❌ Error al procesar el pago');
-  }
+      console.log("response pagar",response);
+      alert(`✅ Pago exitoso.'}`); 
+      return response.data;
+    } catch (error) {
+      console.error('Error al pagar pasaje:', error.response?.data || error.message);
+      throw error;
+    }
   };
 
 
