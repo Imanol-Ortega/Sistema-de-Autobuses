@@ -49,7 +49,7 @@ const Saldo = () => {
         throw new Error(response.data.error || 'Error al cargar saldo');
       }
 
-      alert(✅ Carga exitosa. Nuevo saldo: ${response.data.response.saldo});
+      alert(`✅ Carga exitosa. Nuevo saldo: ${response.data.response.saldo}`);
       setModalVisible(false);
       setMonto('');
       fetchSaldo();
