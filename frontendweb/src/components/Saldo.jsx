@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 const Saldo = () => {
-  const { user } = useContext(AuthContext);
+  const { user } = useContext(useAuth);
   const [saldo, setSaldo] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [monto, setMonto] = useState('');
