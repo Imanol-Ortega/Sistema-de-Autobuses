@@ -5,6 +5,7 @@ import Register from '../components/Register';
 import Map from '../components/BusMap';
 import PrivateRoute from '../context/PrivateRoute';
 import { AuthProvider } from '../context/AuthContext';
+import Saldo from '../components/Saldo';
 
 export default function AppRouter() {
   return (
