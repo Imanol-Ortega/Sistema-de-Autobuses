@@ -1,10 +1,12 @@
 import random
 from geopy.distance import geodesic
 from faker import Faker
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 from cassandra.cluster import Cluster
 from cassandra.auth import PlainTextAuthProvider
 import uuid
+import os
+import time
 
 class BusSimulator:
     def __init__(self, num_buses=6):
@@ -23,18 +25,26 @@ class BusSimulator:
         self.current_traffic = {}
         self.DEFAULT_ZONE = "DEFAULT_ZONE"
         self.DEFAULT_TRAFFIC = "moderate"
-        self.cluster = Cluster(['127.0.0.1'])  # Cambiar por tu IP de Cassandra
-        self.session = self.cluster.connect('transit')
+        self.cassandra_host = os.getenv('CASSANDRA_HOST', '127.0.0.1')
+        
+        # 1. Conectar a Cassandra
+        self._wait_for_cassandra(max_retries=30) 
+        
+        # 3. Usar el keyspace
+        self.session.execute("USE transit;")
+        
+        # 4. Inicializar sistema
         self._initialize_system()
 
     def _initialize_system(self):
         self._load_landmarks_and_routes()
         self._generate_buses()
         self._initialize_traffic_conditions()
+        
     def _load_landmarks_and_routes(self):
         self.routes = []
         self.landmarks = []
-        rutas_rows = self.session.execute("SELECT id, nombre, color FROM rutas")Add commentMore actions
+        rutas_rows = self.session.execute("SELECT id, nombre, color FROM rutas")
 
         for ruta_row in rutas_rows:
             ruta_id = ruta_row.id
@@ -61,7 +71,7 @@ class BusSimulator:
                 "stops": stops
             })
 
-    def _get_route_color(self, route_id):Add commentMore actions
+    def _get_route_color(self, route_id):
         colors = ['#FF0000', '#0000FF', '#00FF00', '#800080', '#FFA500', '#00FFFF']
         return colors[(route_id - 1) % len(colors)]
 
@@ -209,6 +219,21 @@ class BusSimulator:
             "color": r["color"],
             "stops": [{"position": [s[0], s[1]], "name": s[2]} for s in r["stops"]]
         } for r in self.routes]
+
+    def _wait_for_cassandra(self, max_retries=10, delay=5):
+        retries = 0
+        while retries < max_retries:
+            try:
+                self.cluster = Cluster([self.cassandra_host])
+                self.session = self.cluster.connect()
+                self.session.execute("SELECT now() FROM system.local;")
+                print("✅ Conectado a Cassandra")
+                return
+            except Exception as e:
+                print(f"⚠️ Intento {retries+1}/{max_retries}: {str(e)}")
+                time.sleep(delay)
+                retries += 1
+        raise RuntimeError("No se pudo conectar a Cassandra")
 
     def __del__(self):
         """Cierra la conexión con Cassandra"""
