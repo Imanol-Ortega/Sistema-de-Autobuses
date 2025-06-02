@@ -9,14 +9,14 @@
            ↓ produce
 
 
-            Apache Kafka           
+          [Apache Kafka]           
         (topic: "bus-updates")     
 
 
             ↓ consume
 
  
-  Servidor Go (kafkaConsumerLoop)     
+  [Servidor Go (kafkaConsumerLoop)]     
    - Escucha Kafka                    
    - Reenvía a clientes WebSocket     
 
@@ -24,7 +24,7 @@
             ↓ write
             
 
-        Cliente WebSocket       
+        [Cliente WebSocket]       
      (web/app, frontend, etc.)  
 
 
