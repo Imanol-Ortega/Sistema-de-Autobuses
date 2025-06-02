@@ -28,14 +28,24 @@ export const register = async (nombre, email, password) => {
   }
 };
 
+//export const getBuses = async () => {
+//  try {
+//    const response = await fetch('http://192.168.0.58:5000/api/buses');
+//    const data = await response.json();
+//    return data;
+//  } catch (error) {
+//    console.error('Error al obtener buses:', error);
+//    return [];
+//  }
+//};
 export const getBuses = async () => {
   try {
-    const response = await fetch('http://192.168.0.58:5000/api/buses');
-    const data = await response.json();
-    return data;
+    const response = await Api.get('api/buses/get');
+    console.log("data", response.data);
+    return response.data; 
   } catch (error) {
-    console.error('Error al obtener buses:', error);
-    return [];
+    console.error("Error al obtener los buses:", error);
+    throw error;
   }
 };
 
@@ -68,4 +78,31 @@ const cargarSaldo = async (monto, email) => {
   }
 };
 
+// export const pagarPasaje = async (userId, busId) => {
+//   try {
+//     const response = await Api.post('/api/usuarios/restaSaldo', {
+//       user_id: userId,
+//       monto: monto,
+//     });
+//     return response.data;
+//   } catch (error) {
+//     console.error('Error al pagar pasaje:', error);
+//     throw error;
+//   }
+// };
+export const pagarPasaje = async (userId, busId) => {
+  try {
+    console.log("trae del front",userId,busId);
+    const response = await Api.post('/api/usuarios/pagar', {
+      user_id: userId,
+      bus_id: busId
+      // monto: 5000 // Si decides permitir que el cliente lo envíe
+    });
+    console.log("response pagar",response);
+    return response.data;
+  } catch (error) {
+    console.error('Error al pagar pasaje:', error.response?.data || error.message);
+    throw error;
+  }
+};
 
