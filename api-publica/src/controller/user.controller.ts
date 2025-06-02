@@ -104,7 +104,7 @@ export const pagar = async (req: Request, res: Response): Promise<any> => {
 
     await userService.restaSaldos(monto, user_id);
 
-    await userService.pagar(monto, bus_id);
+    // await userService.pagar(monto, bus_id);
 
     successResponse({ response: "ok" }, res);
 

@@ -63,9 +63,21 @@ export default function MapScreen() {
             { latitude: -27.37422, longitude: -55.81374 },   
           ];
   const paradas = [
-    { id: '1', nombre: 'Parada 1', lat: -27.32474, lon: -55.8583 }, // Cerca del inicio
-    { id: '2', nombre: 'Parada 2', lat: -27.31355, lon: -55.84789 }, // Mitad del recorrido
-    { id: '3', nombre: 'Parada 3', lat: -27.3101, lon: -55.81588 }, // Cerca del final
+    { id: 'L1', nombre: 'Parada Lila 1', lat: -27.33449, lon: -55.85852 },
+    { id: 'L2', nombre: 'Parada Lila 2', lat: -27.31463, lon: -55.84994 },
+    { id: 'L3', nombre: 'Parada Lila 3', lat: -27.31347, lon: -55.81045 },
+
+    { id: 'A1', nombre: 'Parada Azul 1', lat: -27.3688, lon: -55.84208 },
+    { id: 'A2', nombre: 'Parada Azul 2', lat: -27.37193, lon: -55.83435 },
+    { id: 'A3', nombre: 'Parada Azul 3', lat: -27.37422, lon: -55.81374 },
+
+    { id: 'R1', nombre: 'Parada Roja 1', lat: -27.34113, lon: -55.85781 },
+    { id: 'R2', nombre: 'Parada Roja 2', lat: -27.32681, lon: -55.87304 },
+    { id: 'R3', nombre: 'Parada Roja 3', lat: -27.30868, lon: -55.88834 },
+
+    { id: 'V1', nombre: 'Parada Verde 1', lat: -27.36348, lon: -55.84636 },
+    { id: 'V2', nombre: 'Parada Verde 2', lat: -27.34458, lon: -55.84077 },
+    { id: 'V3', nombre: 'Parada Verde 3', lat: -27.35988, lon: -55.76207 }
   ];
   return (
     <View style={styles.container}>
@@ -169,7 +181,7 @@ export default function MapScreen() {
                           console.log("item: ",item);
                           pagarPasaje(user.user_id, item.bus_id)
                             .then((res) => {
-                              alert(`✅ Pago exitoso. Nuevo saldo: ₲${res.response?.saldo}`);
+                              alert(`✅ Pago exitoso`);
                             })
                             .catch((err) => {
                               console.error('Error al pagar:', err);

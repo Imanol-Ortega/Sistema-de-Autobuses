@@ -94,9 +94,8 @@ export const pagarPasaje = async (userId, busId) => {
   try {
     console.log("trae del front",userId,busId);
     const response = await Api.post('/api/usuarios/pagar', {
+      bus_id: busId,
       user_id: userId,
-      bus_id: busId
-      // monto: 5000 // Si decides permitir que el cliente lo envíe
     });
     console.log("response pagar",response);
     return response.data;

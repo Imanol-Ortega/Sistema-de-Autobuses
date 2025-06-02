@@ -157,14 +157,35 @@ class UserService {
   }
 
 
-  async pagar(monto: number, bus_id: number): Promise<any> {
+  async pagar(monto: number, bus_id: string): Promise<any> {
+    try {
+      const consultaBus = `
+      SELECT * FROM buses
+    `;
+      const resultadoBus = await cassandraClient.execute(consultaBus, { prepare: true });
+      console.log("restaSaldo",resultadoBus);
+
+
+    } catch (error) {
+      console.error('❌ Error en bus:', error);
+      throw error;
+    }
+
+
+
+
+
+
+
+
+
     try {
       const consultaSaldo = `
       SELECT saldo FROM transit.buses
       WHERE bus_id = ?
     `;
       const resultadoSaldo = await cassandraClient.execute(consultaSaldo, [bus_id], { prepare: true });
-
+      console.log("restaSaldo",resultadoSaldo);
       // Convertir saldo de string a número
       const saldoActualString = resultadoSaldo.rows[0]?.saldo ?? "0";
       const saldoActual = parseFloat(saldoActualString);
