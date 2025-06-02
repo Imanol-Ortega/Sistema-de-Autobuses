@@ -7,7 +7,7 @@ export const injectStore = s => {
 };
 
 export const Api = axios.create({
-  baseURL: 'http://192.168.25.90:3000',
+  baseURL: 'http://192.168.0.58:3000',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
