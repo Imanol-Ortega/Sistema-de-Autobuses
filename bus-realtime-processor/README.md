@@ -4,28 +4,26 @@
 
 #  📊 FLUJO DE DATOS
 
-        [Servicio externo]
-
+```text
+       Servicio externo
            ↓ produce
+   ┌───────────────────────────────┐
+   │        Apache Kafka           │
+   │    (topic: "bus-updates")     │
+   └───────────────────────────────┘
+           ↓ consume
+   ┌─────────────────────────────────────┐
+   │        Servidor Go                 │
+   │     (kafkaConsumerLoop)            │
+   │  - Escucha Kafka                   │
+   │  - Reenvía a clientes WebSocket    │
+   └─────────────────────────────────────┘
+           ↓ write
+   ┌────────────────────────────┐
+   │     Cliente WebSocket      │
+   │  (web/app, frontend, etc.) │
+   └────────────────────────────┘
 
-
-          [Apache Kafka]           
-        (topic: "bus-updates")     
-
-
-            ↓ consume
-
- 
-  [Servidor Go (kafkaConsumerLoop)]     
-   - Escucha Kafka                    
-   - Reenvía a clientes WebSocket     
-
-
-            ↓ write
-            
-
-        [Cliente WebSocket]       
-     (web/app, frontend, etc.)  
 
 
 # 🚌 Bus Real Time Processor
