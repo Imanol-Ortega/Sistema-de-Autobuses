@@ -1,19 +1,8 @@
-
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  Button,
-  TextInput,
-  Modal,
-  StyleSheet,
-  Alert,
-  TouchableOpacity,
-} from 'react-native';
-import { useAuth } from '../context/AuthContext';
+import React, { useEffect, useState, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 
 const Saldo = () => {
-  const { user } = useAuth();
+  const { user } = useContext(AuthContext);
   const [saldo, setSaldo] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [monto, setMonto] = useState('');
@@ -21,7 +10,7 @@ const Saldo = () => {
 
   const fetchSaldo = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/get/', {
+      const response = await fetch('http://localhost:3000/api/usuarios/get/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: user.user_id }),
@@ -33,7 +22,7 @@ const Saldo = () => {
       setSaldo(data.saldo);
     } catch (error) {
       console.error('Error al obtener el saldo:', error);
-      Alert.alert('❌ Error', 'No se pudo obtener el saldo');
+      alert('❌ No se pudo obtener el saldo');
     }
   };
 
@@ -44,7 +33,7 @@ const Saldo = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:3000/api/cargaSaldo/', {
+      const response = await fetch('http://localhost:3000/api/usuarios/cargaSaldo/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -56,7 +45,7 @@ const Saldo = () => {
       if (!response.ok) throw new Error('No se pudo cargar el saldo');
 
       const data = await response.json();
-      Alert.alert('✅ Carga exitosa', `Nuevo saldo: ${data.saldo}`);
+      alert(`✅ Carga exitosa. Nuevo saldo: ${data.saldo}`);
       setModalVisible(false);
       setMonto('');
       setErrors({ monto: '', general: '' });
@@ -72,135 +61,125 @@ const Saldo = () => {
   }, []);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.saldo}>Saldo actual: ${saldo}</Text>
-      <Button title="Cargar saldo" onPress={() => setModalVisible(true)} />
+    <div style={styles.container}>
+      <h2 style={styles.saldo}>Saldo actual: ${saldo}</h2>
+      <button onClick={() => setModalVisible(true)} style={styles.button}>Cargar saldo</button>
 
-      <Modal
-        animationType="slide"
-        transparent
-        visible={modalVisible}
-        onRequestClose={() => {
-          setModalVisible(false);
-          setErrors({ monto: '', general: '' });
-          setMonto('');
-        }}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Cargar Saldo</Text>
+      {modalVisible && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent}>
+            <h3 style={styles.modalTitle}>Cargar Saldo</h3>
 
-            <Text style={styles.label}>Monto a cargar</Text>
-            <TextInput
-              style={[
-                styles.input,
-                { borderColor: errors.monto ? 'red' : '#ccc' },
-              ]}
+            <label style={styles.label}>Monto a cargar</label>
+            <input
+              type="number"
               placeholder="Ingrese el monto"
               value={monto}
-              onChangeText={(text) => {
-                setMonto(text);
+              onChange={(e) => {
+                setMonto(e.target.value);
                 setErrors({ ...errors, monto: '' });
               }}
-              keyboardType="numeric"
+              style={{
+                ...styles.input,
+                borderColor: errors.monto ? 'red' : '#ccc',
+              }}
             />
-            {errors.monto ? <Text style={styles.errorText}>{errors.monto}</Text> : null}
-            {errors.general ? <Text style={styles.errorText}>{errors.general}</Text> : null}
+            {errors.monto && <p style={styles.errorText}>{errors.monto}</p>}
+            {errors.general && <p style={styles.errorText}>{errors.general}</p>}
 
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: '#28a745' }]}
-                onPress={cargarSaldo}
+            <div style={styles.modalButtons}>
+              <button
+                onClick={cargarSaldo}
+                style={{ ...styles.modalButton, backgroundColor: '#28a745' }}
               >
-                <Text style={styles.modalButtonText}>Cargar</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: '#dc3545' }]}
-                onPress={() => {
+                Cargar
+              </button>
+              <button
+                onClick={() => {
                   setModalVisible(false);
-                  setErrors({ monto: '', general: '' });
                   setMonto('');
+                  setErrors({ monto: '', general: '' });
                 }}
+                style={{ ...styles.modalButton, backgroundColor: '#dc3545' }}
               >
-                <Text style={styles.modalButtonText}>Cancelar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-    </View>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
 export default Saldo;
 
-const styles = StyleSheet.create({
+const styles = {
   container: {
-    flex: 1,
+    maxWidth: 500,
+    margin: 'auto',
     padding: 20,
-    justifyContent: 'center',
-    backgroundColor: '#fff',
+    textAlign: 'center',
   },
   saldo: {
-    fontSize: 24,
-    marginBottom: 20,
-    textAlign: 'center',
+    fontSize: '24px',
+    marginBottom: '20px',
+  },
+  button: {
+    padding: '10px 20px',
+    fontSize: '16px',
+    cursor: 'pointer',
   },
   modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
+    position: 'fixed',
+    top: 0, left: 0, right: 0, bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modalContent: {
-    backgroundColor: 'white',
-    margin: 20,
+    backgroundColor: '#fff',
     padding: 20,
     borderRadius: 12,
-    elevation: 5,
+    width: '90%',
+    maxWidth: 400,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
     marginBottom: 10,
-    textAlign: 'center',
+    fontSize: '18px',
   },
   label: {
+    display: 'block',
+    textAlign: 'left',
     marginTop: 10,
-    marginBottom: 4,
-    color: '#333',
-    fontWeight: '600',
-    fontSize: 14,
+    fontWeight: 'bold',
   },
   input: {
     width: '100%',
-    padding: 10,
-    borderWidth: 1,
+    padding: '10px',
+    marginTop: 4,
     borderRadius: 6,
+    border: '1px solid #ccc',
+    fontSize: '16px',
     backgroundColor: '#f5f5f5',
-    color: '#000',
-    fontSize: 16,
   },
   errorText: {
-    marginTop: 4,
     color: 'red',
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: '14px',
+    marginTop: 4,
+    textAlign: 'left',
   },
   modalButtons: {
     marginTop: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    display: 'flex',
+    justifyContent: 'space-between',
   },
   modalButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-  },
-  modalButtonText: {
+    padding: '10px 20px',
     color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-    textAlign: 'center',
+    border: 'none',
+    borderRadius: 8,
+    cursor: 'pointer',
   },
-});
+};
