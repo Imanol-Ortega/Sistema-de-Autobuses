@@ -153,9 +153,11 @@ export default function BusMap() {
                 flexDirection: 'column',
               }}
             >
-              <strong>Bus ID: {bus.id}</strong>
-              <span>Ruta: {bus.route_id}</span>
-              <span>Velocidad: {bus.speed} km/h</span>
+              <strong style={{ color: 'black' }}>Bus ID: {bus.id}</strong>
+              <br />
+              <span style={{ color: 'black' }}>Ruta: {bus.route_id}</span>
+              <br />
+              <span style={{ color: 'black' }}>Velocidad: {bus.speed} km/h</span>
               <button
                 onClick={() => handlePagar(bus)}
                 style={{
