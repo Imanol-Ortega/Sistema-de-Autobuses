@@ -1,4 +1,4 @@
-![UML bus real time processor](bus-realtime-processor\assets\umlbus.png)
+![UML bus real time processor](./assets/umlbus.png)
 
 
 
