@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  cassandra:
+    image: cassandra:4.0
+    ports:
+      - "9042:9042"
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+
+  simulator:
+    build: .
+    depends_on:
+      - cassandra
+    environment:
+      - CASSANDRA_HOST=cassandra
+    volumes:
+      - .:/app
+
+volumes:
+  cassandra_data:
