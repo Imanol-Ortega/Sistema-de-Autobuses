@@ -1,8 +1,13 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../service/axios';
+import { useNavigate } from 'react-router-dom';
 
 const Saldo = () => {
-  const { user } = useContext(useAuth);
+  const navigate = useNavigate();
+  const { user: rawUser } = useAuth();
+  const user = typeof rawUser === 'string' ? JSON.parse(rawUser) : rawUser;
+
   const [saldo, setSaldo] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [monto, setMonto] = useState('');
@@ -10,49 +15,47 @@ const Saldo = () => {
 
   const fetchSaldo = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/usuarios/get/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: user.user_id }),
-      });
+      const response = await api.get('usuarios/get');
+      const users = response.data.response;
+      const userData = users.find(u => u.user_id === user.user_id);
 
-      if (!response.ok) throw new Error('No se pudo obtener el saldo');
+      console.log('userData:', userData);
+      setSaldo(userData?.saldo || 0);
 
-      const data = await response.json();
-      setSaldo(data.saldo);
+      if (!users) {
+        throw new Error(response.data.error || 'Error al obtener saldo');
+      }
     } catch (error) {
-      console.error('Error al obtener el saldo:', error);
-      alert('❌ No se pudo obtener el saldo');
+      console.error('Error al obtener saldo:', error);
+      setErrors(prev => ({ ...prev, general: '❌ No se pudo obtener el saldo' }));
     }
   };
 
   const cargarSaldo = async () => {
+    setErrors({ monto: '', general: '' });
+
     if (!monto || isNaN(monto) || parseFloat(monto) <= 0) {
       setErrors({ monto: 'Ingrese un monto válido', general: '' });
       return;
     }
 
     try {
-      const response = await fetch('http://localhost:3000/api/usuarios/cargaSaldo/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          monto: parseFloat(monto),
-          user_id: user.id,
-        }),
+      const response = await api.post('usuarios/cargaSaldo', {
+        user_id: user.user_id,
+        monto: parseFloat(monto),
       });
 
-      if (!response.ok) throw new Error('No se pudo cargar el saldo');
+      if (!response.data.response) {
+        throw new Error(response.data.error || 'Error al cargar saldo');
+      }
 
-      const data = await response.json();
-      alert(`✅ Carga exitosa. Nuevo saldo: ${data.saldo}`);
+      alert(✅ Carga exitosa. Nuevo saldo: ${response.data.response.saldo});
       setModalVisible(false);
       setMonto('');
-      setErrors({ monto: '', general: '' });
       fetchSaldo();
     } catch (error) {
       console.error('Error al cargar saldo:', error);
-      setErrors({ ...errors, general: 'No se pudo realizar la carga de saldo' });
+      setErrors(prev => ({ ...prev, general: '❌ No se pudo cargar el saldo' }));
     }
   };
 
@@ -63,6 +66,22 @@ const Saldo = () => {
   return (
     <div style={styles.container}>
       <h2 style={styles.saldo}>Saldo actual: ${saldo}</h2>
+      <div style={{ position: 'center', top: 20, left: 30, zIndex: 3000 }}>
+        <button
+          onClick={() => navigate('/home')}
+          style={{
+            background: 'gray',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 6,
+            padding: '8px 14px',
+            cursor: 'pointer',
+          }}
+        >
+          ← Volver
+        </button>
+      </div>
+
       <button onClick={() => setModalVisible(true)} style={styles.button}>Cargar saldo</button>
 
       {modalVisible && (
@@ -75,10 +94,7 @@ const Saldo = () => {
               type="number"
               placeholder="Ingrese el monto"
               value={monto}
-              onChange={(e) => {
-                setMonto(e.target.value);
-                setErrors({ ...errors, monto: '' });
-              }}
+              onChange={(e) => setMonto(e.target.value)}
               style={{
                 ...styles.input,
                 borderColor: errors.monto ? 'red' : '#ccc',
@@ -120,6 +136,7 @@ const styles = {
     margin: 'auto',
     padding: 20,
     textAlign: 'center',
+    position: 'relative',
   },
   saldo: {
     fontSize: '24px',
@@ -137,9 +154,11 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 2000,
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: '#1e1e2f', 
+    color: '#ffffff', 
     padding: 20,
     borderRadius: 12,
     width: '90%',
@@ -154,18 +173,20 @@ const styles = {
     textAlign: 'left',
     marginTop: 10,
     fontWeight: 'bold',
+    color: '#ffffff', 
   },
   input: {
     width: '100%',
     padding: '10px',
     marginTop: 4,
     borderRadius: 6,
-    border: '1px solid #ccc',
+    border: '1px solid #555',
     fontSize: '16px',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#2c2c3e', 
+    color: '#fff', 
   },
   errorText: {
-    color: 'red',
+    color: '#ff4d4d', 
     fontSize: '14px',
     marginTop: 4,
     textAlign: 'left',
