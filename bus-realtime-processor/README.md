@@ -1,4 +1,10 @@
-![UML bus real time processor](./assets/umlbus.png)
+# 🚌 Bus Real Time Processor
+
+Este módulo implementa el procesamiento de datos en tiempo real utilizando **Apache Kafka**, **Apache Spark** y un **simulador de datos**. La arquitectura está contenida dentro de Docker para el despliegue.
+
+---
+#  🗂️ Diagrama UML 
+<img src="./assets/umlbus.png" alt="Diagrama UML" width="600"/>
 
 
 
@@ -26,9 +32,6 @@
 
  ```
 
-# 🚌 Bus Real Time Processor
-
-Este módulo implementa el procesamiento de datos en tiempo real utilizando **Apache Kafka**, **Apache Spark** y un **simulador de datos**. La arquitectura está contenida dentro de Docker para el despliegue.
 
 ---
 
